@@ -4,7 +4,7 @@ CURRENT=$(dirname "$0")
 cd ${CURRENT}
 HOMEDIR=`pwd`/..
 TMPDIR=/home/spark/sparkgatk/run/tmp
-LIBSDIR=${HOMEDIR}/libs
+LIBSDIR=${HOMEDIR}/lib
 SPARK_HOME=/home/spark/Softwares/spark
 
 THREAD=6
@@ -29,7 +29,7 @@ ${SPARK_HOME}/bin/spark-submit \
         --jars ${LIBSDIR}/optparse_2.11-2.2.jar,${LIBSDIR}/htsjdk-1.4.1.jar,${LIBSDIR}/hadoop-bam-7.8.1-SNAPSHOT-jar-with-dependencies.jar \
         ${HOMEDIR}/target/scala-2.11/sparkgatk_2.11-1.0.jar \
         -B /home/spark/sparkgatk/bin \
-        -n 200 \
+        -n 20 \
         -t ${THREAD} \
         -I /user/spark/data_L001/case_64M \
         -I /user/spark/data_L001/normal_64M \
