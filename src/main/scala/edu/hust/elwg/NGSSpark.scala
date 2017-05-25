@@ -5,10 +5,6 @@ import java.io._
 
 import edu.hust.elwg.tools.{ChromosomeTools, MySAMRecord, PreprocessTools}
 import edu.hust.elwg.utils._
-import htsjdk.samtools.util.BufferedLineReader
-import htsjdk.samtools._
-import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.FileSystem
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.storage.StorageLevel
@@ -55,26 +51,26 @@ object NGSSpark {
     }).count()
     NGSSparkFileUtils.mkHdfsDir(hdfsTmp, delete = true)
 
-    //    val inputChunkFileRDD: RDD[(String, String)] = if (inputDirs.length == 1) {
-    //      sc.wholeTextFiles(inputDirs.head, partitionNum)
-    //    } else if (inputDirs.length == 2) {
-    //      sc.wholeTextFiles(inputDirs.head, partitionNum) ++ sc.wholeTextFiles(inputDirs(1), partitionNum)
-    //    } else {
-    //      throw new IOException("Please specify one or two input directory")
-    //    }
-    //
-    //    val allSamRecordsRDD: RDD[(Int, MySAMRecord)] = inputChunkFileRDD.flatMap(itr => {
-    //      val bwa = new BwaSpark(confBC.value)
-    //      bwa.runBwaDownloadFile(itr._1)
-    //    })
+    val inputChunkFileRDD: RDD[(String, String)] = if (inputDirs.length == 1) {
+      sc.wholeTextFiles(inputDirs.head, partitionNum)
+    } else if (inputDirs.length == 2) {
+      sc.wholeTextFiles(inputDirs.head, partitionNum) ++ sc.wholeTextFiles(inputDirs(1), partitionNum)
+    } else {
+      throw new IOException("Please specify one or two input directory")
+    }
 
-    val allSamRecordsRDD = sc.textFile("bwa/normal.sam").mapPartitions(itr => {
-      val v = new VariantCalling(confBC.value, 0)
-      v.readStream(0, itr).toIterator
-    }) ++ sc.textFile("bwa/case.sam").mapPartitions(itr => {
-      val v = new VariantCalling(confBC.value, 0)
-      v.readStream(1, itr).toIterator
+    val allSamRecordsRDD: RDD[(Int, MySAMRecord)] = inputChunkFileRDD.flatMap(itr => {
+      val bwa = new BwaSpark(confBC.value)
+      bwa.runBwaDownloadFile(itr._1)
     })
+
+    //    val allSamRecordsRDD = sc.textFile("bwa/normal.sam").mapPartitions(itr => {
+    //      val v = new VariantCalling(confBC.value, 0)
+    //      v.readStream(0, itr).toIterator
+    //    }) ++ sc.textFile("bwa/case.sam").mapPartitions(itr => {
+    //      val v = new VariantCalling(confBC.value, 0)
+    //      v.readStream(1, itr).toIterator
+    //    })
 
     allSamRecordsRDD.persist(StorageLevel.MEMORY_ONLY_SER)
     allSamRecordsRDD.count()
