@@ -1,9 +1,9 @@
 package edu.hust.elwg.utils
 
-import java.io.IOException
+import java.io.{BufferedWriter, File, FileWriter, IOException}
 import java.net.URISyntaxException
 
-import edu.hust.elwg.tools.ReadGroup
+import edu.hust.elwg.tools.{ChromosomeTools, ReadGroup}
 import htsjdk.samtools.{SAMSequenceDictionary, SAMSequenceRecord}
 import org.apache.spark.SparkConf
 import org.sellmerfud.optparse.{OptionParser, OptionParserException}
@@ -32,9 +32,10 @@ object CommandLine {
                     customArgs: List[String] = Nil,
 
                     /** Read group information */
-                    readGroup: List[String] = Nil
+                    readGroup: List[String] = Nil,
 
                     /** Others */
+                    useLocalCProgram: Boolean = false
                   )
 
   private val DICT_SUFFIX: String = ".dict"
@@ -71,6 +72,7 @@ object CommandLine {
         reqd[String]("", "--read_group", "Read Group information.") { (v, c) => c.copy(readGroup = c.readGroup :+ v) }
 
         /** ------------------------------------------------ Others ---------------------------------------------------- **/
+        bool("", "--use_local_c_program", "Use local bwa and samtool program.") { (v, c) => c.copy(useLocalCProgram = v) }
       }.parse(args, Param())
     } catch {
       case e: OptionParserException => println(e.getMessage); sys.exit(1)
@@ -89,6 +91,7 @@ object CommandLine {
     NGSSparkConf.setInput(conf, param.input)
     NGSSparkConf.setLocalTmp(conf, param.localTmp)
     NGSSparkConf.setHdfsTmp(conf, param.hdfsTmp)
+    NGSSparkConf.setBedFile(conf, param.targetBed)
 
     /** Threads and partitions */
     NGSSparkConf.setPartitionNum(conf, param.partitionNum)
@@ -104,6 +107,7 @@ object CommandLine {
 
     /** Others */
     parseDictFile(conf)
+    NGSSparkConf.setUseLocalCProgram(conf, param.useLocalCProgram)
   }
 
   private def parseCustomArgs(conf: SparkConf): Unit = {

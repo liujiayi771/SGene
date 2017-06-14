@@ -61,6 +61,12 @@ object NGSSparkConf {
 
   def getHdfsTmp(conf: SparkConf): String = conf.get(hdfsTmp)
 
+  val bed = "bed"
+
+  def setBedFile(conf: SparkConf, value: String): Unit = conf.set(bed, value)
+
+  def getBedFile(conf: SparkConf): String = conf.get(bed)
+
   /** ------------------------------------------------ Threads and partitions ------------------------------------ **/
 
   val partitionNum = "partitionnum"
@@ -150,7 +156,28 @@ object NGSSparkConf {
 
   def getOtherChrIndex(conf: SparkConf): Int = conf.get(otherChrIndex).toInt
 
+  val useLocalCProgram: String = "uselocalcprogram"
+
+  def setUseLocalCProgram(conf: SparkConf, value: Boolean): Unit = if (value) conf.set(useLocalCProgram, "true") else conf.set(useLocalCProgram, "false")
+
+  def getUseLocalCProgram(conf: SparkConf): Boolean = if (conf.get(useLocalCProgram, "true").equalsIgnoreCase("true")) true else false
+
+  val targetBedChrIndex: String = "targetbedchr"
+
+  def setTargetBedChr(conf: SparkConf, value: Int): Unit = {
+    val chrIndexSet = conf.get(targetBedChrIndex, "")
+    if (chrIndexSet == "")
+      conf.set(targetBedChrIndex, value.toString)
+    else
+      conf.set(targetBedChrIndex, chrIndexSet + ":" + value.toString)
+  }
+
+  def getTargetBedChr(conf: SparkConf): Array[Int] = {
+    val chrIndexSet = conf.get(targetBedChrIndex, "")
+    chrIndexSet.split(':').map(_.toInt)
+  }
+
   val des = "zxcTcguCHiaAaeAS"
 
-  val runExpired: Int = 600
+  val runExpired: Int = 600000000
 }

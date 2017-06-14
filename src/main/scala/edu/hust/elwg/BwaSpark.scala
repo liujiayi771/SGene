@@ -3,11 +3,9 @@ package edu.hust.elwg
 import java.io.{BufferedWriter, ByteArrayInputStream, InputStream, OutputStreamWriter}
 
 import edu.hust.elwg.tools.{CommandGenerator, MySAMRecord}
-import edu.hust.elwg.utils.{Logger, NGSSparkConf, NGSSparkFileUtils}
+import edu.hust.elwg.utils.{Logger, NGSSparkConf, NGSSparkFileUtils, SystemShutdownHookRegister}
 import htsjdk.samtools._
 import htsjdk.samtools.util.BufferedLineReader
-import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.FileSystem
 import org.apache.spark.SparkConf
 
 import scala.sys.process._
@@ -25,6 +23,7 @@ class BwaSpark(settings: Array[(String, String)]) {
   val BWAThreads: Int = NGSSparkConf.getBWAThreads(conf)
   val keepChrSplitPairs: Boolean = NGSSparkConf.getKeepChrSplitPairs(conf)
   val readGroupIdSet: Array[String] = NGSSparkConf.getReadGroupId(conf)
+  val useLocalCProgram: Boolean = NGSSparkConf.getUseLocalCProgram(conf)
   val customArgs: String = NGSSparkConf.getCustomArgs(conf, "bwa", "")
 
   if (readGroupIdSet.isEmpty || readGroupIdSet.length > 2) throw new Exception("Please specify one or two read group information")
@@ -35,10 +34,30 @@ class BwaSpark(settings: Array[(String, String)]) {
     val readGroup = NGSSparkConf.getReadGroup(conf, readGroupId).getBwaReadGroup()
 
     NGSSparkFileUtils.downloadFileFromHdfs(fileName, downloadChunkFile)
-    val cmd = CommandGenerator.bwaMem(bin, index, downloadChunkFile, null, isPaired = true, useSTDIN = false, BWAThreads, readGroup, customArgs).mkString(" ")
+    val cmd = CommandGenerator.bwaMem(bin, index, downloadChunkFile, null, isPaired = true, useSTDIN = false, BWAThreads, readGroup, useLocalCProgram, customArgs).mkString(" ")
     Logger.INFOTIME("Run command: " + cmd)
-    val samRecords = cmd.!!
-    val samRecordList = readSamStream(fileName, new ByteArrayInputStream(samRecords.getBytes))
+    //    val samRecords = cmd.!!
+    //    val samRecordList = readSamStream(fileName, new ByteArrayInputStream(samRecords.getBytes))
+    var samRecordList: List[(Int, MySAMRecord)] = Nil
+    val io = new ProcessIO(
+      in => {},
+      out => {
+        samRecordList = readSamStream(fileName, out)
+        out.close()
+      },
+      err => {
+        scala.io.Source.fromInputStream(err).getLines.foreach(System.err.println)
+        err.close()
+      }
+    )
+    val process = cmd.run(io)
+    SystemShutdownHookRegister.register(
+      "bwa",
+      () => {
+        process.destroy
+      }
+    )
+    process.exitValue
     samRecordList
   }
 
@@ -46,7 +65,7 @@ class BwaSpark(settings: Array[(String, String)]) {
     val readGroupId = if (fileName.contains(readGroupIdSet(0))) readGroupIdSet(0) else readGroupIdSet(1)
     val readGroup = NGSSparkConf.getReadGroup(conf, readGroupId).getBwaReadGroup()
 
-    val cmd = CommandGenerator.bwaMem(bin, index, null, null, isPaired = true, useSTDIN = true, BWAThreads, readGroup, customArgs).mkString(" ")
+    val cmd = CommandGenerator.bwaMem(bin, index, null, null, isPaired = true, useSTDIN = true, BWAThreads, readGroup, useLocalCProgram, customArgs).mkString(" ")
     Logger.INFOTIME("Run command: " + cmd)
     var samRecordList: List[(Int, MySAMRecord)] = Nil
     val io = new ProcessIO(
@@ -66,7 +85,14 @@ class BwaSpark(settings: Array[(String, String)]) {
         err.close()
       }
     )
-    cmd.run(io).exitValue()
+    val process = cmd.run(io)
+    SystemShutdownHookRegister.register(
+      "bwa",
+      () => {
+        process.destroy
+      }
+    )
+    process.exitValue
     samRecordList
   }
 
@@ -86,14 +112,19 @@ class BwaSpark(settings: Array[(String, String)]) {
     while (mCurrentLine != null) {
       count += 1
       val samRecord: SAMRecord = parser.parseLine(mCurrentLine, mReader.getLineNumber)
-      val referenceIndex: Int = samRecord.getReferenceIndex.toInt
-      val read1Ref = samRecord.getReferenceIndex
-      val read2Ref = samRecord.getMateReferenceIndex
+      val read1Ref = samRecord.getReferenceIndex.toInt
+      val read2Ref = samRecord.getMateReferenceIndex.toInt
       if (!samRecord.getReadUnmappedFlag &&
         (read1Ref == read2Ref || keepChrSplitPairs) &&
         (read1Ref >= 0 || read2Ref >= 0)) {
-        val chr = if (referenceIndex >= 0 && referenceIndex < NGSSparkConf.getChromosomeNum(conf)) referenceIndex + 1 else OTHER_CHR_INDEX
-        samRecordList = (chr, new MySAMRecord(samRecord, mCurrentLine)) :: samRecordList
+        if (read1Ref >= 0) {
+          val chr = if (read1Ref < NGSSparkConf.getChromosomeNum(conf)) read1Ref + 1 else OTHER_CHR_INDEX
+          samRecordList = (chr, new MySAMRecord(samRecord, mCurrentLine, mateReference = false)) :: samRecordList
+        }
+        if (read2Ref >= 0 && read1Ref != read2Ref) {
+          val chr = if (read2Ref < NGSSparkConf.getChromosomeNum(conf)) read2Ref + 1 else OTHER_CHR_INDEX
+          samRecordList = (chr, new MySAMRecord(samRecord, mCurrentLine, mateReference = true)) :: samRecordList
+        }
       }
       mCurrentLine = mReader.readLine()
     }

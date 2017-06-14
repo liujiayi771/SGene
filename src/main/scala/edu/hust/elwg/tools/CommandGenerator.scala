@@ -8,7 +8,7 @@ object CommandGenerator {
     (command.toList ::: args.split("\\s+").toList).toArray
   }
 
-  def randomString(length: Int) = scala.util.Random.alphanumeric.take(length).mkString
+  def randomString(length: Int): String = scala.util.Random.alphanumeric.take(length).mkString
 
   val bwaCommand: Array[String] = Array("bwa", "samxe")
   val bwaTool: Array[String] = Array("mem", "aln")
@@ -27,10 +27,11 @@ object CommandGenerator {
               useSTDIN: Boolean, // whether use /dev/stdin for input stream
               numberOfThreads: Int, // number of threads for bwa program
               readGroup: String,
+              useLocalCProgram: Boolean,
               customArgs: String // other arguments for bwa program
             ): Array[String] = {
     val command: ArrayBuffer[String] = new ArrayBuffer[String]()
-    command += (bin + bwaCommand(0))
+    if (useLocalCProgram) command += "bwa" else command += (bin + bwaCommand(0))
     command += bwaTool(0)
     command += bwaReferenceIndex
     if (isPaired) command += bwaOption(0)

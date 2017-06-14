@@ -2,7 +2,7 @@ package edu.hust.elwg.tools
 
 import java.text.DecimalFormat
 
-import edu.hust.elwg.utils.{Logger, NGSSparkConf}
+import edu.hust.elwg.utils.{Logger, NGSSparkConf, SystemShutdownHookRegister}
 import org.apache.spark.SparkConf
 
 import scala.collection.mutable.ArrayBuffer
@@ -52,7 +52,14 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
     val customArgs: String = NGSSparkConf.getCustomArgs(conf, "gatk", "realignertargetcreator")
     val realignerTargetCreatorCmd = CommandGenerator.addToCommand(command.toArray, customArgs)
     Logger.INFOTIME(realignerTargetCreatorCmd.mkString(" "))
-    realignerTargetCreatorCmd.mkString(" ").!
+    val process = realignerTargetCreatorCmd.mkString(" ").run
+    SystemShutdownHookRegister.register(
+      "realignertargetcreator",
+      () => {
+        process.destroy
+      }
+    )
+    process.exitValue
   }
 
   /**
@@ -63,7 +70,7 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
     * @param targets  output interval file
     * @param ref      reference file
     */
-  def runRealignerTargetCreator(inputOne: String, inputTwo: String, targets: String, ref: String): Unit = {
+  def runRealignerTargetCreator(inputOne: String, inputTwo: String, targets: String, ref: String, bed: String): Unit = {
     /**
       * example:
       * java -Xmx8g -jar GenomeAnalysisTK.jar \
@@ -83,10 +90,18 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
     command += ("-I " + inputOne)
     command += ("-I " + inputTwo)
     command += ("-o " + targets)
+    if (bed != "" && bed != null) command += ("-L " + bed)
     val customArgs: String = NGSSparkConf.getCustomArgs(conf, "gatk", "realignertargetcreator")
     val realignerTargetCreatorCmd = CommandGenerator.addToCommand(command.toArray, customArgs)
     Logger.INFOTIME(realignerTargetCreatorCmd.mkString(" "))
-    realignerTargetCreatorCmd.mkString(" ").!
+    val process = realignerTargetCreatorCmd.mkString(" ").run
+    SystemShutdownHookRegister.register(
+      "realignertargetcreator",
+      () => {
+        process.destroy
+      }
+    )
+    process.exitValue
   }
 
   /**
@@ -124,7 +139,14 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
     val customArgs: String = NGSSparkConf.getCustomArgs(conf, "gatk", "indelrealigner")
     val indelRealignerCmd = CommandGenerator.addToCommand(command.toArray, customArgs)
     Logger.INFOTIME(indelRealignerCmd.mkString(" "))
-    indelRealignerCmd.mkString(" ").!
+    val process = indelRealignerCmd.mkString(" ").run
+    SystemShutdownHookRegister.register(
+      "indelrealigner",
+      () => {
+        process.destroy
+      }
+    )
+    process.exitValue
   }
 
   /**
@@ -164,10 +186,17 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
     val customArgs: String = NGSSparkConf.getCustomArgs(conf, "gatk", "indelrealigner")
     val indelRealignerCmd = CommandGenerator.addToCommand(command.toArray, customArgs)
     Logger.INFOTIME(indelRealignerCmd.mkString(" "))
-    indelRealignerCmd.mkString(" ").!
+    val process = indelRealignerCmd.mkString(" ").run
+    SystemShutdownHookRegister.register(
+      "indelrealigner",
+      () => {
+        process.destroy
+      }
+    )
+    process.exitValue
   }
 
-  def runBaseRecalibrator(input: String, table: String, ref: String): Unit = {
+  def runBaseRecalibrator(input: String, table: String, ref: String, bed: String): Unit = {
     /**
       * example: from CountCovariates
       * -I input.bam -T Countcovariates -R ref -knownSites dbsnp
@@ -193,11 +222,19 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
     command += ("-R " + ref)
     command += ("-I " + input)
     command += ("-o " + table)
+    if (bed != "" && bed != null) command += ("-L " + bed)
     command += "--disable_auto_index_creation_and_locking_when_reading_rods"
     val customArgs: String = NGSSparkConf.getCustomArgs(conf, "gatk", "baserecalibrator")
     val baseRecalibratorCmd = CommandGenerator.addToCommand(command.toArray, customArgs)
     Logger.INFOTIME(baseRecalibratorCmd.mkString(" "))
-    baseRecalibratorCmd.mkString(" ").!
+    val process = baseRecalibratorCmd.mkString(" ").run
+    SystemShutdownHookRegister.register(
+      "baserecalibrator",
+      () => {
+        process.destroy
+      }
+    )
+    process.exitValue
   }
 
   def runPrintReads(input: String, output: String, ref: String, table: String): Unit = {
@@ -224,10 +261,17 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
     val customArgs: String = NGSSparkConf.getCustomArgs(conf, "gatk", "printreads")
     val printReadsCmd = CommandGenerator.addToCommand(command.toArray, customArgs)
     Logger.INFOTIME(printReadsCmd.mkString(" "))
-    printReadsCmd.mkString(" ").!
+    val process = printReadsCmd.mkString(" ").run
+    SystemShutdownHookRegister.register(
+      "printreads",
+      () => {
+        process.destroy
+      }
+    )
+    process.exitValue
   }
 
-  def runMuTect2(inputOne: String, inputTwo: String, output: String, ref: String): Unit = {
+  def runMuTect2(inputOne: String, inputTwo: String, output: String, ref: String, bed: String): Unit = {
     /**
       * example:
       * java -Xmx8g -Xms8g -jar GenomeAnalysisTK.jar \
@@ -259,10 +303,22 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
     command += ("-I:tumor " + tumorFile)
     command += ("-I:normal " + normalFile)
     command += ("-o " + output)
+    if (bed != "" && bed != null) command += ("-L " + bed)
     val customArgs: String = NGSSparkConf.getCustomArgs(conf, "gatk", "mutect2")
     val mutect2Cmd = CommandGenerator.addToCommand(command.toArray, customArgs)
     Logger.INFOTIME(mutect2Cmd.mkString(" "))
-    mutect2Cmd.mkString(" ").!
+    val process = mutect2Cmd.mkString(" ").run
+    SystemShutdownHookRegister.register(
+      "mutect2",
+      () => {
+        process.destroy
+      }
+    )
+//    sys addShutdownHook {
+//      Logger.INFO("Caught shutdown, kill process")
+//      process.destroy
+//    }
+    process.exitValue
   }
 
   def runHaplotypeCaller(input: String, output: String, ref: String, scc: Double, sec: Double): Unit = {
@@ -291,7 +347,12 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
     val customArgs: String = NGSSparkConf.getCustomArgs(conf, "gatk", "variantcaller")
     val haplotypeCallerCmd = CommandGenerator.addToCommand(command.toArray, customArgs)
     Logger.INFOTIME(haplotypeCallerCmd.mkString(" "))
-    haplotypeCallerCmd.mkString(" ").!
+    val process = haplotypeCallerCmd.mkString(" ").run
+    sys addShutdownHook {
+      Logger.INFO("Caught shutdown, kill process")
+      process.destroy
+    }
+    process.exitValue
   }
 
   def runCombineVariants(inputs: Array[String], output: String, ref: String): Unit = {
@@ -325,6 +386,11 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
     val customArgs: String = NGSSparkConf.getCustomArgs(conf, "gatk", "combinevariants")
     val combineVariantsCmd = CommandGenerator.addToCommand(command.toArray, customArgs)
     Logger.INFOTIME(combineVariantsCmd.mkString(" "))
-    combineVariantsCmd.mkString(" ").!
+    val process = combineVariantsCmd.mkString(" ").run
+    sys addShutdownHook {
+      Logger.INFO("Caught shutdown, kill process")
+      process.destroy
+    }
+    process.exitValue
   }
 }
