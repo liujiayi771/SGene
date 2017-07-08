@@ -17,15 +17,19 @@ object NGSSpark {
 
   def main(args: Array[String]): Unit = {
     val conf: SparkConf = new SparkConf().setAppName("NGS-Spark")
+    conf.set("spark.scheduler.mode", "FAIR")
     conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     conf.registerKryoClasses(Array(classOf[MySAMRecord]))
     val sc: SparkContext = new SparkContext(conf)
     CommandLine.parseParam(args, conf)
-    NGSSparkConf.setChromosomeNum(conf, 24)
-    NGSSparkConf.setOtherChrIndex(conf, 99)
+    val CHR_NUM = 24
+    val OTHER_CHR_INDEX = 99
+    NGSSparkConf.setChromosomeNum(conf, CHR_NUM)
+    NGSSparkConf.setOtherChrIndex(conf, OTHER_CHR_INDEX)
 
     val partitionNum = NGSSparkConf.getPartitionNum(conf)
     val inputDirs = NGSSparkConf.getInput(conf)
+    val outputPrefix = NGSSparkConf.getOutput(conf)
     val localTmp = NGSSparkConf.getLocalTmp(conf)
     val hdfsTmp = NGSSparkConf.getHdfsTmp(conf)
     val bin = NGSSparkConf.getBin(conf)
@@ -33,8 +37,6 @@ object NGSSpark {
     val BASE_RECALIBRATOR_TABLE: String = hdfsTmp + "base_recalibrator_table/"
     val TABLE: String = hdfsTmp + "table/"
     val MUTECT2_DIR: String = hdfsTmp + "vcf/"
-    val OTHER_CHR_INDEX: Int = NGSSparkConf.getOtherChrIndex(conf)
-    val CHR_NUM: Int = NGSSparkConf.getChromosomeNum(conf)
     val chrTools = ChromosomeTools(NGSSparkConf.getSequenceDictionary(conf))
     val desFile = System.getenv("SPARK_HOME") + "/data/timestamp"
     val des = new DesUtils(NGSSparkConf.des)
@@ -48,6 +50,7 @@ object NGSSpark {
     worker.map(_ => {
       NGSSparkFileUtils.mkLocalDir(localTmp, delete = true)
     }).count()
+    NGSSparkFileUtils.mkLocalDir(localTmp, delete = true)
     NGSSparkFileUtils.mkHdfsDir(hdfsTmp, delete = true)
 
     parseTargetBed(conf)
@@ -86,7 +89,7 @@ object NGSSpark {
     }).collect.toMap
 
     val allChrToSamRecordsRDD: RDD[(Int, Iterable[MySAMRecord])] = allSamRecordsRDD
-      .flatMap(itr => balanceLoad(itr, chrInfo, avgSamRecords, conf))
+      .flatMap(itr => balanceLoad(itr, chrInfo, avgSamRecords, CHR_NUM))
       .groupByKey(CHR_NUM * 2)
 //      .filter(itr => NGSSparkConf.getTargetBedChr(conf).contains(itr._1))
 
@@ -139,7 +142,7 @@ object NGSSpark {
     vcfFiles.foreach(println)
     val tools = new PreprocessTools(bin, conf)
 
-    tools.runSortVcf(vcfFiles, "spark-variant-calling-" + Timer.getGlobalDate + ".vcf")
+    tools.runSortVcf(vcfFiles, outputPrefix + "-" + Timer.getGlobalDate + ".vcf")
 
 
     val endTime = System.currentTimeMillis()
@@ -316,7 +319,6 @@ object NGSSpark {
 
   def check(desFile: String, des: DesUtils): Int = {
     if (!new File(desFile).exists()) throw new Exception("Timestamp not exist error")
-    val desContent = Source.fromFile(desFile).mkString
     val mmSplits = des.decrypt(Source.fromFile(desFile).mkString).split('$')
     if (mmSplits(0) != "###" || mmSplits(2) != "###") throw new Exception("Timestamp error")
     mmSplits(1).toInt
@@ -339,13 +341,13 @@ object NGSSpark {
     * @param avgn            Average number of sam records for all chromosome
     * @return Array of regroup sam record, the number of elements in this array is 1 (one part) or 2 (two part)
     */
-  def balanceLoad(record: (Int, MySAMRecord), chromosomesInfo: Map[Int, (Int, Int)], avgn: Long, conf: SparkConf): Array[(Int, MySAMRecord)] = {
-    val hdfsTargetBedPath = NGSSparkConf.getHdfsTmp(conf) + "targetBed/"
+  def balanceLoad(record: (Int, MySAMRecord), chromosomesInfo: Map[Int, (Int, Int)], avgn: Long, CHR_NUM: Int): Array[(Int, MySAMRecord)] = {
+
     val output: ArrayBuffer[(Int, MySAMRecord)] = ArrayBuffer.empty
     val limit = avgn * 1.5
     var key = record._1
     val sam = record._2
-    if (key >= 1 && key <= NGSSparkConf.getChromosomeNum(conf)) {
+    if (key >= 1 && key <= CHR_NUM) {
       val chrNum = chromosomesInfo.size
       val chrInfo = chromosomesInfo(key)
       if (chrInfo._1 > limit) {
@@ -387,10 +389,12 @@ object NGSSpark {
       }
       out.close()
       NGSSparkFileUtils.uploadFileToHdfs(localBedFile, hdfsBedFile)
+      NGSSparkFileUtils.deleteLocalFile(localBedFile, keep = false)
     }
     val f = new File(NGSSparkConf.getLocalTmp(conf) + "empty.bed")
     f.createNewFile()
     NGSSparkFileUtils.uploadFileToHdfs(f.getAbsolutePath, hdfsTargetBedPath + f.getName)
+    NGSSparkFileUtils.deleteLocalFile(f.getAbsolutePath, keep = false)
     f.deleteOnExit()
   }
 }

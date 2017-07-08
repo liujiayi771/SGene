@@ -26,6 +26,8 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
   val bin: String = NGSSparkConf.getBin(conf)
   val index: String = NGSSparkConf.getIndex(conf)
 
+  val useSplitTargetBed: Boolean = NGSSparkConf.getUseLocalCProgram(conf)
+
   val TARGET_BED_DIR: String = hdfsTmp + "targetBed/"
   val SORT_DIR: String = hdfsTmp + "sort_bam/"
   val UN_SORT_DIR: String = hdfsTmp + "un_sort_bam/"
@@ -49,6 +51,7 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
 
   def variantCallFirstHalf(unsortedSamRecords: Iterable[MySAMRecord]): (Int, String, String) = {
     Logger.INFOTIME("Processing chromosome region [first]: " + regionId)
+    Logger.INFOTIME("size: " + unsortedSamRecords.size)
 
     implicit val samRecordOrdering = new Ordering[MySAMRecord] {
       override def compare(x: MySAMRecord, y: MySAMRecord): Int = {
@@ -343,10 +346,6 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
         (read1Ref >= 0 || read2Ref >= 0)) {
         val chr = if (referenceIndex >= 0 && referenceIndex < NGSSparkConf.getChromosomeNum(conf)) referenceIndex + 1 else 99
         samRecordList = (chr, new MySAMRecord(sam, itr, mateReference = true)) :: samRecordList
-        //        if (read1Ref != read2Ref) {
-        //          val chr2 = if (read2Ref >= 0 && read2Ref < NGSSparkConf.getChromosomeNum(conf)) read2Ref + 1 else 99
-        //          samRecordList = (chr2, new MySAMRecord(sam, itr)) :: samRecordList
-        //        }
       }
     }
     samRecordList
@@ -442,7 +441,10 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     NGSSparkFileUtils.uploadFileToHdfs(outBamFileTwo, hdfsOutBamFileTwo)
 
     NGSSparkFileUtils.deleteLocalFile(inputBamFileOne, keep)
+    NGSSparkFileUtils.deleteLocalFile(inputBamFileOne.split('.').head + ".bai", keep)
     NGSSparkFileUtils.deleteLocalFile(inputBamFileTwo, keep)
+    NGSSparkFileUtils.deleteLocalFile(inputBamFileTwo.split('.').head + ".bai", keep)
+    NGSSparkFileUtils.deleteLocalFile(targetsFile, keep)
 
     (outBamFileOne, outBamFileTwo, hdfsOutBamFileOne, hdfsOutBamFileTwo)
   }
@@ -503,8 +505,10 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     gatk.runBaseRecalibrator(inputBamFile, tableFile, index, bed)
 
     NGSSparkFileUtils.deleteLocalFile(inputBamFile, keep)
+    NGSSparkFileUtils.deleteLocalFile(inputBamFile.split('.').head + ".bai", keep)
 
     NGSSparkFileUtils.uploadFileToHdfs(tableFile, hdfsTableFile)
+    NGSSparkFileUtils.deleteLocalFile(tableFile, keep)
   }
 
   def printReads(rg: ReadGroup, inputBamFile: String, table: String): String = {
@@ -520,6 +524,7 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     NGSSparkFileUtils.uploadFileToHdfs(outBamFile, hdfsOutBamFile, upload)
 
     NGSSparkFileUtils.deleteLocalFile(inputBamFile, keep)
+    NGSSparkFileUtils.deleteLocalFile(inputBamFile.split('.').head + ".bai", keep)
 
     outBamFile
   }
@@ -534,7 +539,7 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     tools.runBuildBamIndexPicard(inputBamFileTwo)
 
     val bed =
-      if (true) {
+      if (useSplitTargetBed) {
         if (NGSSparkConf.getTargetBedChr(conf).contains(chrId)) {
           NGSSparkFileUtils.downloadFileFromHdfs(TARGET_BED_DIR + chrId + ".bed", localTmp + chrId + ".bed")
           localTmp + chrId + ".bed"
@@ -549,7 +554,9 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     gatk.runMuTect2(inputBamFileOne, inputBamFileTwo, vcfOutFile, index, bed)
 
     NGSSparkFileUtils.deleteLocalFile(inputBamFileOne, keep)
+    NGSSparkFileUtils.deleteLocalFile(inputBamFileOne.split('.').head + ".bai", keep)
     NGSSparkFileUtils.deleteLocalFile(inputBamFileTwo, keep)
+    NGSSparkFileUtils.deleteLocalFile(inputBamFileTwo.split('.').head + ".bai", keep)
 
     vcfOutFile
   }

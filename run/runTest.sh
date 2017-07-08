@@ -30,8 +30,8 @@ ${SPARK_HOME}/bin/spark-submit \
         --bed ${targetBed} \
         -n 200 \
         -t ${THREAD} \
-        -I /user/spark/data/case_40M \
-        -I /user/spark/data/normal_40M \
+        -I /user/spark/data/case_64M \
+        -I /user/spark/data/normal_64M \
         --index /home/spark/GATK/reference_sequence/hs37d5.fasta \
         --read_group "ID:normal LB:normalLib SM:normal PU:runname PL:illumina" \
         --read_group "ID:case LB:caseLib SM:case PU:runname PL:illumina" \

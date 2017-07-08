@@ -28,7 +28,12 @@ object NGSSparkFileUtils {
   def deleteLocalFile(path: String, keep: Boolean): Unit = {
     if (!keep) {
       val deleteFile = new File(path)
-      deleteFile.deleteOnExit()
+      if (deleteFile.exists()) {
+        deleteFile.delete()
+        Logger.DEBUG(path + " deleted")
+      } else {
+        Logger.DEBUG("Delete file " + path + " does not exist")
+      }
     }
   }
 
@@ -118,7 +123,7 @@ object NGSSparkFileUtils {
     if (res == 0) Logger.DEBUG(from + " download")
     else {
       Logger.DEBUG(from + " failed to download")
-      throw new IOException()
+      throw new IOException(from + " failed to download")
     }
   }
 
@@ -167,7 +172,7 @@ object NGSSparkFileUtils {
     if (res == 0) Logger.DEBUG(from + " download")
     else {
       Logger.DEBUG(from + " failed to download")
-      throw new IOException()
+      throw new IOException(from + " failed to download")
     }
   }
 
@@ -217,7 +222,7 @@ object NGSSparkFileUtils {
     if (res == 0) Logger.DEBUG(from + " download")
     else {
       Logger.DEBUG(from + " failed to download")
-      throw new IOException()
+      throw new IOException(from + " failed to download")
     }
   }
 
@@ -261,7 +266,7 @@ object NGSSparkFileUtils {
     if (res == 0) Logger.DEBUG(from + " uploaded")
     else {
       Logger.DEBUG(from + " failed to upload")
-      throw new IOException()
+      throw new IOException(from + " failed to upload")
     }
   }
 
@@ -308,7 +313,7 @@ object NGSSparkFileUtils {
     if (res == 0) Logger.DEBUG(from + " uploaded")
     else {
       Logger.DEBUG(from + " failed to upload")
-      throw new IOException()
+      throw new IOException(from + " failed to upload")
     }
   }
 
@@ -352,7 +357,7 @@ object NGSSparkFileUtils {
     if (res == 0) Logger.DEBUG(from + " uploaded")
     else {
       Logger.DEBUG(from + " failed to upload")
-      throw new IOException()
+      throw new IOException(from + " failed to upload")
     }
   }
 

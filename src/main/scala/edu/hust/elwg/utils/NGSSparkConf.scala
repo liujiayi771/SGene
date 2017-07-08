@@ -67,6 +67,12 @@ object NGSSparkConf {
 
   def getBedFile(conf: SparkConf): String = conf.get(bed)
 
+  val output = "output"
+
+  def setOutput(conf: SparkConf, value: String): Unit = conf.set(output, value)
+
+  def getOutput(conf: SparkConf): String = conf.get(output)
+
   /** ------------------------------------------------ Threads and partitions ------------------------------------ **/
 
   val partitionNum = "partitionnum"
@@ -162,6 +168,12 @@ object NGSSparkConf {
 
   def getUseLocalCProgram(conf: SparkConf): Boolean = if (conf.get(useLocalCProgram, "true").equalsIgnoreCase("true")) true else false
 
+  val useSplitTargetBed: String = "usesplittargetbed"
+
+  def setUseSplitTargetBed(conf: SparkConf, value: Boolean): Unit = if (value) conf.set(useSplitTargetBed, "true") else conf.set(useSplitTargetBed, "false")
+
+  def getUseSplitTargetBed(conf: SparkConf): Boolean = if (conf.get(useSplitTargetBed, "true").equalsIgnoreCase("true")) true else false
+
   val targetBedChrIndex: String = "targetbedchr"
 
   def setTargetBedChr(conf: SparkConf, value: Int): Unit = {
@@ -179,5 +191,5 @@ object NGSSparkConf {
 
   val des = "zxcTcguCHiaAaeAS"
 
-  val runExpired: Int = 600000000
+  val runExpired: Int = 600000
 }

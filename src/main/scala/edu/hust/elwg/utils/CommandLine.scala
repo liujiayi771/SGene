@@ -23,6 +23,7 @@ object CommandLine {
                     localTmp: String = "",
                     hdfsTmp: String = "",
                     targetBed: String = "",
+                    output: String = "",
 
                     /** Threads and partitions */
                     partitionNum: Int = 0,
@@ -35,7 +36,8 @@ object CommandLine {
                     readGroup: List[String] = Nil,
 
                     /** Others */
-                    useLocalCProgram: Boolean = false
+                    useLocalCProgram: Boolean = false,
+                    useSplitTargetBed: Boolean = false
                   )
 
   private val DICT_SUFFIX: String = ".dict"
@@ -59,6 +61,7 @@ object CommandLine {
           "This should be on a local disk for every node for optimal performance.") { (v, c) => c.copy(localTmp = v) }
         reqd[String]("", "--hdfs_tmp <STR>", "Temporary directory in HDFS.") { (v, c) => c.copy(hdfsTmp = v) }
         reqd[String]("", "--bed <STR>", "Target bed file for variant calling.") { (v, c) => c.copy(targetBed = v) }
+        reqd[String]("", "--output <STR>", "The name of output file.") { (v, c) => c.copy(output = v) }
 
         /** ------------------------------------------------ Threads and partitions ------------------------------------ **/
         reqd[Int]("-n <partition number>", "", "Enter the number of partition.") { (v, c) => c.copy(partitionNum = v) }
@@ -73,6 +76,8 @@ object CommandLine {
 
         /** ------------------------------------------------ Others ---------------------------------------------------- **/
         bool("", "--use_local_c_program", "Use local bwa and samtool program.") { (v, c) => c.copy(useLocalCProgram = v) }
+        bool("", "--split_target_bed", "Use split targetBed in Mutect2.") { (v, c) => c.copy(useSplitTargetBed = v) }
+
       }.parse(args, Param())
     } catch {
       case e: OptionParserException => println(e.getMessage); sys.exit(1)
@@ -92,6 +97,7 @@ object CommandLine {
     NGSSparkConf.setLocalTmp(conf, param.localTmp)
     NGSSparkConf.setHdfsTmp(conf, param.hdfsTmp)
     NGSSparkConf.setBedFile(conf, param.targetBed)
+    NGSSparkConf.setOutput(conf, param.output)
 
     /** Threads and partitions */
     NGSSparkConf.setPartitionNum(conf, param.partitionNum)
@@ -108,6 +114,7 @@ object CommandLine {
     /** Others */
     parseDictFile(conf)
     NGSSparkConf.setUseLocalCProgram(conf, param.useLocalCProgram)
+    NGSSparkConf.setUseSplitTargetBed(conf, param.useSplitTargetBed)
   }
 
   private def parseCustomArgs(conf: SparkConf): Unit = {
