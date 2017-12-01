@@ -4,7 +4,7 @@ version := "0.1-SNAPSHOT"
 
 scalaVersion := "2.11.8"
 
-libraryDependencies += "org.apache.spark" %% "spark-core" % "2.0.1" % "provided"
+libraryDependencies += "org.apache.spark" %% "spark-core" % "2.0.1" % "compile"
 //libraryDependencies += "org.apache.spark" % "spark-core_2.11" % "2.1.0" % "provided"
 libraryDependencies += "org.sellmerfud" % "optparse_2.11" % "2.2"
 

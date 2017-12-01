@@ -30,11 +30,8 @@ class BwaSpark(settings: Array[(String, String)]) {
 
   def runBwaDownloadFile(fileName: String): List[(Int, MySAMRecord)] = {
     val readGroupId = if (fileName.contains(readGroupIdSet(0))) readGroupIdSet(0) else readGroupIdSet(1)
-    val downloadChunkFile = localTmp + readGroupId + "-" + fileName.split("/").last
     val readGroup = NGSSparkConf.getReadGroup(conf, readGroupId).getBwaReadGroup()
-
-    NGSSparkFileUtils.downloadFileFromHdfs(fileName, downloadChunkFile)
-    val cmd = CommandGenerator.bwaMem(bin, index, downloadChunkFile, null, isPaired = true, useSTDIN = false, BWAThreads, readGroup, useLocalCProgram, customArgs).mkString(" ")
+    val cmd = CommandGenerator.bwaMem(bin, index, fileName, null, isPaired = true, useSTDIN = false, BWAThreads, readGroup, useLocalCProgram, customArgs).mkString(" ")
     Logger.INFOTIME("Run command: " + cmd)
     //    val samRecords = cmd.!!
     //    val samRecordList = readSamStream(fileName, new ByteArrayInputStream(samRecords.getBytes))
@@ -58,7 +55,6 @@ class BwaSpark(settings: Array[(String, String)]) {
       }
     )
     process.exitValue
-    NGSSparkFileUtils.deleteLocalFile(downloadChunkFile, keep = false)
     samRecordList
   }
 

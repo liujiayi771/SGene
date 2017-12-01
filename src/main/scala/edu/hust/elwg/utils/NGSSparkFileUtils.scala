@@ -1,6 +1,6 @@
 package edu.hust.elwg.utils
 
-import java.io.{File, IOException}
+import java.io.{File, FileInputStream, FileOutputStream, IOException}
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, FileUtil, Path}
@@ -374,6 +374,28 @@ object NGSSparkFileUtils {
       }
     } finally {
       fs.close()
+    }
+  }
+
+  def copyFileInLocal(from: String, to: String, delete: Boolean): Unit = {
+    val fromFile = new File(from)
+    val toFile = new File(to)
+    if (fromFile.exists() && fromFile.isFile) {
+      if (!toFile.exists()) {
+        new FileOutputStream(toFile) getChannel() transferFrom(
+          new FileInputStream(fromFile) getChannel(), 0, Long.MaxValue
+        )
+      } else {
+        if (delete) {
+          toFile.deleteOnExit()
+          new FileOutputStream(toFile) getChannel() transferFrom(
+            new FileInputStream(fromFile) getChannel(), 0, Long.MaxValue
+          )
+        } else {
+          Logger.DEBUG("failed to copy file from " + from + " to " + to)
+          throw new IOException("failed to copy file from " + from + " to " + to)
+        }
+      }
     }
   }
 }

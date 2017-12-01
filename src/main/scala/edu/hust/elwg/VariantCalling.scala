@@ -17,7 +17,6 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
   conf.setAll(settings)
   val chrId: Int = if (regionId <= NGSSparkConf.getChromosomeNum(conf)) regionId else regionId - NGSSparkConf.getChromosomeNum(conf)
   val localTmp: String = NGSSparkConf.getLocalTmp(conf)
-  val hdfsTmp: String = NGSSparkConf.getHdfsTmp(conf)
   val readGroupIdSet: Array[String] = NGSSparkConf.getReadGroupId(conf)
 
   val randomString: String = CommandGenerator.randomString(8)
@@ -28,15 +27,15 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
 
   val useSplitTargetBed: Boolean = NGSSparkConf.getUseLocalCProgram(conf)
 
-  val TARGET_BED_DIR: String = hdfsTmp + "targetBed/"
-  val SORT_DIR: String = hdfsTmp + "sort_bam/"
-  val UN_SORT_DIR: String = hdfsTmp + "un_sort_bam/"
-  val MARK_DUPLICATES_DIR: String = hdfsTmp + "mark_duplicates_bam/"
-  val MARK_DUPLICATES_METRICS_DIR: String = hdfsTmp + "mark_duplicates_metrics/"
-  val INDEL_REALIGNMENT_DIR: String = hdfsTmp + "indel_realignment_bam/"
-  val BASE_RECALIBRATOR_TABLE: String = hdfsTmp + "base_recalibrator_table/"
-  val PRINT_READS_DIR: String = hdfsTmp + "print_reads_bam/"
-  val MUTECT2_DIR: String = hdfsTmp + "vcf/"
+  val TARGET_BED_DIR: String = localTmp + "targetBed/"
+  val SORT_DIR: String = localTmp + "sort_bam/"
+  val UN_SORT_DIR: String = localTmp + "un_sort_bam/"
+  val MARK_DUPLICATES_DIR: String = localTmp + "mark_duplicates_bam/"
+  val MARK_DUPLICATES_METRICS_DIR: String = localTmp + "mark_duplicates_metrics/"
+  val INDEL_REALIGNMENT_DIR: String = localTmp + "indel_realignment_bam/"
+  val BASE_RECALIBRATOR_TABLE: String = localTmp + "base_recalibrator_table/"
+  val PRINT_READS_DIR: String = localTmp + "print_reads_bam/"
+  val MUTECT2_DIR: String = localTmp + "vcf/"
 
   val dict: SAMSequenceDictionary = NGSSparkConf.getSequenceDictionary(conf)
   val header: SAMFileHeader = new SAMFileHeader()
@@ -132,22 +131,12 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
 
     val tools = new PreprocessTools(bin, conf)
 
-    val localInputBamFileOne = localTmp + inputBamFileOne.split("/").last
-    val localInputBamFileTwo = localTmp + inputBamFileTwo.split("/").last
-    val localInputTableOne = localTmp + inputTableOne.split("/").last
-    val localInputTableTwo = localTmp + inputTableTwo.split("/").last
-
-    NGSSparkFileUtils.downloadFileFromHdfs(inputBamFileOne, localInputBamFileOne)
-    NGSSparkFileUtils.downloadFileFromHdfs(inputBamFileTwo, localInputBamFileTwo)
-    NGSSparkFileUtils.downloadFileFromHdfs(inputTableOne, localInputTableOne, delete = false)
-    NGSSparkFileUtils.downloadFileFromHdfs(inputTableTwo, localInputTableTwo, delete = false)
-
-    tools.runBuildBamIndexPicard(localInputBamFileOne)
-    tools.runBuildBamIndexPicard(localInputBamFileTwo)
+    tools.runBuildBamIndexPicard(inputBamFileOne)
+    tools.runBuildBamIndexPicard(inputBamFileTwo)
 
     // Run printReads
-    val printReadsFileOne = printReads(NGSSparkConf.getReadGroup(conf, readGroupIdSet(0)), localInputBamFileOne, localInputTableOne)
-    val printReadsFileTwo = printReads(NGSSparkConf.getReadGroup(conf, readGroupIdSet(1)), localInputBamFileTwo, localInputTableTwo)
+    val printReadsFileOne = printReads(NGSSparkConf.getReadGroup(conf, readGroupIdSet(0)), inputBamFileOne, inputTableOne)
+    val printReadsFileTwo = printReads(NGSSparkConf.getReadGroup(conf, readGroupIdSet(1)), inputBamFileTwo, inputTableTwo)
 
     // Run mutect2
     val vcfOutputFile = mutect2(printReadsFileOne, printReadsFileTwo)
@@ -300,7 +289,7 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
   }
 
   def writeSortedBamFile(rg: ReadGroup, sortedSamRecords: Array[MySAMRecord]): String = {
-    NGSSparkFileUtils.mkHdfsDir(SORT_DIR, delete = false)
+    NGSSparkFileUtils.mkLocalDir(SORT_DIR, delete = false)
 
     val factory: SAMFileWriterFactory = new SAMFileWriterFactory()
     val outHeader = header.clone()
@@ -308,9 +297,9 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     outHeader.addReadGroup(rg.getSAMReadGroupRecord())
 
     val sortOutFile = tmpFileBase + "-" + rg.RGID + "-sorted.bam"
-    val hdfsSortOutFile = SORT_DIR + sortOutFile.split("/").last
+    val nfsSortOutFile = SORT_DIR + sortOutFile.split("/").last
 
-    val writer: SAMFileWriter = factory.makeBAMWriter(outHeader, true, new File(sortOutFile))
+    val writer: SAMFileWriter = factory.makeBAMWriter(outHeader, true, new File(nfsSortOutFile))
     val samRecordFactory: SAMRecordFactory = new DefaultSAMRecordFactory()
     val validationStringency: ValidationStringency = ValidationStringency.LENIENT
     val parser: SAMLineParser = new SAMLineParser(samRecordFactory, validationStringency, outHeader, null, null)
@@ -322,9 +311,7 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
 
     writer.close()
 
-    NGSSparkFileUtils.uploadFileToHdfs(sortOutFile, hdfsSortOutFile, upload)
-
-    sortOutFile
+    nfsSortOutFile
   }
 
   def readStream(rg: Int, samRecord: Iterator[String]): List[(Int, MySAMRecord)] = {
@@ -352,7 +339,7 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
   }
 
   def writeUnSortedBamFile(rg: ReadGroup, sortedSamRecords: Array[MySAMRecord]): String = {
-    NGSSparkFileUtils.mkHdfsDir(UN_SORT_DIR, delete = false)
+    NGSSparkFileUtils.mkLocalDir(UN_SORT_DIR, delete = false)
 
     val factory: SAMFileWriterFactory = new SAMFileWriterFactory()
     val outHeader = header.clone()
@@ -360,9 +347,9 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     outHeader.addReadGroup(rg.getSAMReadGroupRecord())
 
     val unSortOutFile = tmpFileBase + "-" + rg.RGID + "-unsorted.bam"
-    val hdfsUnSortOutFile = UN_SORT_DIR + unSortOutFile.split("/").last
+    val nfsUnSortOutFile = UN_SORT_DIR + unSortOutFile.split("/").last
 
-    val writer: SAMFileWriter = factory.makeBAMWriter(outHeader, true, new File(unSortOutFile))
+    val writer: SAMFileWriter = factory.makeBAMWriter(outHeader, true, new File(nfsUnSortOutFile))
     val samRecordFactory: SAMRecordFactory = new DefaultSAMRecordFactory()
     val validationStringency: ValidationStringency = ValidationStringency.LENIENT
     val parser: SAMLineParser = new SAMLineParser(samRecordFactory, validationStringency, outHeader, null, null)
@@ -374,40 +361,30 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
 
     writer.close()
 
-    NGSSparkFileUtils.uploadFileToHdfs(unSortOutFile, hdfsUnSortOutFile, upload)
-
-    NGSSparkFileUtils.deleteLocalFile(unSortOutFile, keep)
-
-    unSortOutFile
+    nfsUnSortOutFile
   }
 
   def markDuplicates(rg: ReadGroup, inputBamFile: String): String = {
-    NGSSparkFileUtils.mkHdfsDir(MARK_DUPLICATES_DIR, delete = false)
+    NGSSparkFileUtils.mkLocalDir(MARK_DUPLICATES_DIR, delete = false)
 
     val tools = new PreprocessTools(bin, conf)
 
     val markDuplicatesOutFile = tmpFileBase + "-" + rg.RGID + "-markDuplicates.bam"
-    val hdfsMarkDuplicatesOutFile = MARK_DUPLICATES_DIR + markDuplicatesOutFile.split("/").last
+    val nfsMarkDuplicatesOutFile = MARK_DUPLICATES_DIR + markDuplicatesOutFile.split("/").last
 
     val markDuplicatesMetricsFile = tmpFileBase + "-" + rg.RGID + "-metrics.txt"
-    val hdfsMarkDuplicatesMetricsFile = MARK_DUPLICATES_METRICS_DIR + markDuplicatesMetricsFile.split("/").last
+    val nfsMarkDuplicatesMetricsFile = MARK_DUPLICATES_METRICS_DIR + markDuplicatesMetricsFile.split("/").last
 
-    tools.runMarkDuplicates(inputBamFile, markDuplicatesOutFile, markDuplicatesMetricsFile, keepDups)
+    tools.runMarkDuplicates(inputBamFile, nfsMarkDuplicatesOutFile, nfsMarkDuplicatesMetricsFile, keepDups)
 
     // Generate the bai file of the bam file
-    tools.runBuildBamIndexPicard(markDuplicatesOutFile)
+    tools.runBuildBamIndexPicard(nfsMarkDuplicatesOutFile)
 
-    NGSSparkFileUtils.uploadFileToHdfs(markDuplicatesOutFile, hdfsMarkDuplicatesOutFile, upload)
-    NGSSparkFileUtils.uploadFileToHdfs(markDuplicatesMetricsFile, hdfsMarkDuplicatesMetricsFile, upload)
-
-    NGSSparkFileUtils.deleteLocalFile(inputBamFile, keep)
-    NGSSparkFileUtils.deleteLocalFile(markDuplicatesMetricsFile, keep)
-
-    markDuplicatesOutFile
+    nfsMarkDuplicatesOutFile
   }
 
   def indelRealignment(inputBamFileOne: String, inputBamFileTwo: String): (String, String, String, String) = {
-    NGSSparkFileUtils.mkHdfsDir(INDEL_REALIGNMENT_DIR, delete = false)
+    NGSSparkFileUtils.mkLocalDir(INDEL_REALIGNMENT_DIR, delete = false)
 
     val gatk = new GATKTools(index, bin, conf)
 
@@ -415,10 +392,10 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     val nWayOut = "_realign.bam"
 
     val outBamFileOne = inputBamFileOne.split("/").last.split('.').head + nWayOut
-    val hdfsOutBamFileOne = INDEL_REALIGNMENT_DIR + outBamFileOne
+    val nfsOutBamFileOne = INDEL_REALIGNMENT_DIR + outBamFileOne
 
     val outBamFileTwo = inputBamFileTwo.split("/").last.split('.').head + nWayOut
-    val hdfsOutBamFileTwo = INDEL_REALIGNMENT_DIR + outBamFileTwo
+    val nfsOutBamFileTwo = INDEL_REALIGNMENT_DIR + outBamFileTwo
 
     val bed =
       if (splitBed) {
@@ -437,16 +414,10 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
 
     gatk.runIndelRealigner(inputBamFileOne, inputBamFileTwo, targetsFile, nWayOut, index)
 
-    NGSSparkFileUtils.uploadFileToHdfs(outBamFileOne, hdfsOutBamFileOne)
-    NGSSparkFileUtils.uploadFileToHdfs(outBamFileTwo, hdfsOutBamFileTwo)
+    NGSSparkFileUtils.copyFileInLocal(outBamFileOne, nfsOutBamFileOne, delete = true)
+    NGSSparkFileUtils.copyFileInLocal(outBamFileTwo, nfsOutBamFileTwo, delete = true)
 
-    NGSSparkFileUtils.deleteLocalFile(inputBamFileOne, keep)
-    NGSSparkFileUtils.deleteLocalFile(inputBamFileOne.split('.').head + ".bai", keep)
-    NGSSparkFileUtils.deleteLocalFile(inputBamFileTwo, keep)
-    NGSSparkFileUtils.deleteLocalFile(inputBamFileTwo.split('.').head + ".bai", keep)
-    NGSSparkFileUtils.deleteLocalFile(targetsFile, keep)
-
-    (outBamFileOne, outBamFileTwo, hdfsOutBamFileOne, hdfsOutBamFileTwo)
+    (outBamFileOne, outBamFileTwo, nfsOutBamFileOne, nfsOutBamFileTwo)
   }
 
   def baseQualityScoreRecalibration(rg: ReadGroup, inputBamFile: String): String = {
@@ -482,12 +453,12 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
   }
 
   def baseRecalibrator(rg: ReadGroup, inputBamFile: String): Unit = {
-    NGSSparkFileUtils.mkHdfsDir(BASE_RECALIBRATOR_TABLE, delete = false)
+    NGSSparkFileUtils.mkLocalDir(BASE_RECALIBRATOR_TABLE, delete = false)
 
     val gatk = new GATKTools(index, bin, conf)
 
     val tableFile = tmpFileBase + "-" + rg.RGID + ".table"
-    val hdfsTableFile = BASE_RECALIBRATOR_TABLE + tableFile.split("/").last
+    val nfsTableFile = BASE_RECALIBRATOR_TABLE + tableFile.split("/").last
 
     val bed =
       if (splitBed) {
@@ -502,31 +473,23 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
         ""
       }
 
-    gatk.runBaseRecalibrator(inputBamFile, tableFile, index, bed)
+    gatk.runBaseRecalibrator(inputBamFile, nfsTableFile, index, bed)
 
     NGSSparkFileUtils.deleteLocalFile(inputBamFile, keep)
     NGSSparkFileUtils.deleteLocalFile(inputBamFile.split('.').head + ".bai", keep)
-
-    NGSSparkFileUtils.uploadFileToHdfs(tableFile, hdfsTableFile)
-    NGSSparkFileUtils.deleteLocalFile(tableFile, keep)
   }
 
   def printReads(rg: ReadGroup, inputBamFile: String, table: String): String = {
-    NGSSparkFileUtils.mkHdfsDir(PRINT_READS_DIR, delete = false)
+    NGSSparkFileUtils.mkLocalDir(PRINT_READS_DIR, delete = false)
 
     val gatk = new GATKTools(index, bin, conf)
 
     val outBamFile = tmpFileBase + "-" + rg.RGID + "-printreads.bam"
-    val hdfsOutBamFile = PRINT_READS_DIR + outBamFile.split("/").last
+    val nfsOutBamFile = PRINT_READS_DIR + outBamFile.split("/").last
 
-    gatk.runPrintReads(inputBamFile, outBamFile, index, table)
+    gatk.runPrintReads(inputBamFile, nfsOutBamFile, index, table)
 
-    NGSSparkFileUtils.uploadFileToHdfs(outBamFile, hdfsOutBamFile, upload)
-
-    NGSSparkFileUtils.deleteLocalFile(inputBamFile, keep)
-    NGSSparkFileUtils.deleteLocalFile(inputBamFile.split('.').head + ".bai", keep)
-
-    outBamFile
+    nfsOutBamFile
   }
 
   def mutect2(inputBamFileOne: String, inputBamFileTwo: String): String = {
@@ -535,8 +498,8 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
 
     val vcfOutFile = tmpFileBase + ".vcf"
 
-    tools.runBuildBamIndexPicard(inputBamFileOne)
-    tools.runBuildBamIndexPicard(inputBamFileTwo)
+//    tools.runBuildBamIndexPicard(inputBamFileOne)
+//    tools.runBuildBamIndexPicard(inputBamFileTwo)
 
     val bed =
       if (useSplitTargetBed) {
@@ -553,22 +516,17 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
 
     gatk.runMuTect2(inputBamFileOne, inputBamFileTwo, vcfOutFile, index, bed)
 
-    NGSSparkFileUtils.deleteLocalFile(inputBamFileOne, keep)
-    NGSSparkFileUtils.deleteLocalFile(inputBamFileOne.split('.').head + ".bai", keep)
-    NGSSparkFileUtils.deleteLocalFile(inputBamFileTwo, keep)
-    NGSSparkFileUtils.deleteLocalFile(inputBamFileTwo.split('.').head + ".bai", keep)
-
     vcfOutFile
   }
 
   def writeVCFOutputFile(vcfOutputFile: String): Unit = {
-    NGSSparkFileUtils.mkHdfsDir(MUTECT2_DIR, delete = false)
+    NGSSparkFileUtils.mkLocalDir(MUTECT2_DIR, delete = false)
 
     if (vcfOutputFile != "" && checkVcfIsNotEmpty(vcfOutputFile)) {
       try {
-        val hdfsVcfOutputFile = MUTECT2_DIR + vcfOutputFile.split("/").last
-        NGSSparkFileUtils.uploadFileToHdfs(vcfOutputFile, hdfsVcfOutputFile)
-        NGSSparkFileUtils.uploadFileToHdfs(vcfOutputFile + ".idx", hdfsVcfOutputFile + ".idx")
+        val nfsVcfOutputFile = MUTECT2_DIR + vcfOutputFile.split("/").last
+        NGSSparkFileUtils.copyFileInLocal(vcfOutputFile, nfsVcfOutputFile, delete = true)
+        NGSSparkFileUtils.copyFileInLocal(vcfOutputFile + ".idx", nfsVcfOutputFile + ".idx", delete = true)
       } catch {
         case e: URISyntaxException => {
           Logger.EXCEPTION(e)

@@ -16,9 +16,11 @@ import scala.io.Source
 object NGSSpark {
 
   def main(args: Array[String]): Unit = {
-    val conf: SparkConf = new SparkConf().setAppName("NGS-Spark")
+    val conf: SparkConf = new SparkConf().setAppName("NGS-Spark").setMaster("local[*]")
     conf.set("spark.scheduler.mode", "FAIR")
     conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+    conf.set("spark.driver.memory", "2g")
+    conf.set("spark.executor.memory", "2g")
     conf.registerKryoClasses(Array(classOf[MySAMRecord]))
     val sc: SparkContext = new SparkContext(conf)
     CommandLine.parseParam(args, conf)
@@ -31,27 +33,21 @@ object NGSSpark {
     val inputDirs = NGSSparkConf.getInput(conf)
     val outputPrefix = NGSSparkConf.getOutput(conf)
     val localTmp = NGSSparkConf.getLocalTmp(conf)
-    val hdfsTmp = NGSSparkConf.getHdfsTmp(conf)
     val bin = NGSSparkConf.getBin(conf)
     val readGroupIdSet = NGSSparkConf.getReadGroupId(conf)
-    val BASE_RECALIBRATOR_TABLE: String = hdfsTmp + "base_recalibrator_table/"
-    val TABLE: String = hdfsTmp + "table/"
-    val MUTECT2_DIR: String = hdfsTmp + "vcf/"
+    val BASE_RECALIBRATOR_TABLE: String = localTmp + "base_recalibrator_table/"
+    val TABLE: String = localTmp + "table/"
+    val MUTECT2_DIR: String = localTmp + "vcf/"
     val chrTools = ChromosomeTools(NGSSparkConf.getSequenceDictionary(conf))
-    val desFile = System.getenv("SPARK_HOME") + "/data/timestamp"
-    val des = new DesUtils(NGSSparkConf.des)
-    val mm = check(desFile, des)
-    if (mm > NGSSparkConf.runExpired) throw new Exception("Timestamp expired")
-    val startTime = System.currentTimeMillis()
+
 
     /** clean tmp file **/
-    val workerNum: Int = sc.getConf.get("spark.cores.max").toInt
-    val worker: RDD[Int] = sc.parallelize(Range(0, workerNum), workerNum)
-    worker.map(_ => {
-      NGSSparkFileUtils.mkLocalDir(localTmp, delete = true)
-    }).count()
+//    val workerNum: Int = sc.getConf.get("spark.cores.max").toInt
+//    val worker: RDD[Int] = sc.parallelize(Range(0, workerNum), workerNum)
+//    worker.map(_ => {
+//      NGSSparkFileUtils.mkLocalDir(localTmp, delete = true)
+//    }).count()
     NGSSparkFileUtils.mkLocalDir(localTmp, delete = true)
-    NGSSparkFileUtils.mkHdfsDir(hdfsTmp, delete = true)
 
     parseTargetBed(conf)
     val confBC: Broadcast[Array[(String, String)]] = sc.broadcast(conf.getAll)
@@ -101,23 +97,18 @@ object NGSSpark {
     firstHalf.count()
 
     /** Download table file **/
-    val localTableDir = localTmp + BASE_RECALIBRATOR_TABLE.split("/").last
-    NGSSparkFileUtils.downloadDirFromHdfs(BASE_RECALIBRATOR_TABLE, localTableDir)
-    val tableFile = new File(localTableDir)
+    val tableFile = new File(BASE_RECALIBRATOR_TABLE)
     val oneFile = tableFile.listFiles().map(_.getAbsolutePath).filter(name => name.endsWith(".table") && name.contains(readGroupIdSet(0)))
     val twoFile = tableFile.listFiles().map(_.getAbsolutePath).filter(name => name.endsWith(".table") && name.contains(readGroupIdSet(1)))
     val oneOutputTableFile = localTmp + readGroupIdSet(0) + ".table"
-    val hdfsOneOutputTableFile = TABLE + oneOutputTableFile.split("/").last
-    val twoOutputTableFile = localTmp + readGroupIdSet(1) + ".table"
-    val hdfsTwoOutputTableFile = TABLE + twoOutputTableFile.split("/").last
-    MergeTables.mergeTable(oneFile, twoFile, oneOutputTableFile, twoOutputTableFile)
 
-    NGSSparkFileUtils.uploadFileToHdfs(oneOutputTableFile, hdfsOneOutputTableFile)
-    NGSSparkFileUtils.uploadFileToHdfs(twoOutputTableFile, hdfsTwoOutputTableFile)
+    val twoOutputTableFile = localTmp + readGroupIdSet(1) + ".table"
+
+    MergeTables.mergeTable(oneFile, twoFile, oneOutputTableFile, twoOutputTableFile)
 
     firstHalf.map(itr => {
       val vc = new VariantCalling(confBC.value, itr._1)
-      vc.variantCallSecondHalf(itr._2, itr._3, hdfsOneOutputTableFile, hdfsTwoOutputTableFile)
+      vc.variantCallSecondHalf(itr._2, itr._3, oneOutputTableFile, twoOutputTableFile)
     }).count()
 
     //    runFromMarkDuplicates(sc, confBC, readGroupIdSet)
@@ -125,9 +116,7 @@ object NGSSpark {
     //    runFromBQSR(sc, confBC, readGroupIdSet)
 
     /** Download vcf files from HDFS **/
-    val localVcfDir = localTmp + MUTECT2_DIR.split("/").last
-    NGSSparkFileUtils.downloadDirFromHdfs(MUTECT2_DIR, localVcfDir)
-    var vcfFiles = new File(localVcfDir).listFiles().map(_.getAbsolutePath).filter(_.endsWith(".vcf"))
+    var vcfFiles = new File(MUTECT2_DIR).listFiles().map(_.getAbsolutePath).filter(_.endsWith(".vcf"))
 
     // Sort vcf files
     vcfFiles = vcfFiles.sortWith((a, b) => {
@@ -144,12 +133,6 @@ object NGSSpark {
 
     tools.runSortVcf(vcfFiles, outputPrefix + "-" + Timer.getGlobalDate + ".vcf")
 
-
-    val endTime = System.currentTimeMillis()
-    val runTime = mm + (endTime - startTime) / 1000 / 60
-    val out = new BufferedWriter(new FileWriter(desFile))
-    out.write(des.encrypt("###$" + runTime + "$###"))
-    out.close()
     sc.stop()
   }
 
@@ -374,27 +357,22 @@ object NGSSpark {
   def parseTargetBed(conf: SparkConf): Unit = {
     val bedFile = NGSSparkConf.getBedFile(conf)
     val chrTool = ChromosomeTools(NGSSparkConf.getSequenceDictionary(conf))
-    val hdfsTargetBedPath = NGSSparkConf.getHdfsTmp(conf) + "targetBed/"
-    NGSSparkFileUtils.mkHdfsDir(hdfsTargetBedPath, delete = true)
+    val targetBedPath = NGSSparkConf.getLocalTmp(conf) + "targetBed/"
+    NGSSparkFileUtils.mkHdfsDir(targetBedPath, delete = false)
     val lines = Source.fromFile(bedFile).getLines
     val groupLines = lines.toList.groupBy(_.split("\\s+").head)
     for (index <- groupLines) {
       NGSSparkConf.setTargetBedChr(conf, chrTool.getRefIndexByRefName(index._1) + 1)
-      val localBedFile = NGSSparkConf.getLocalTmp(conf) + (chrTool.getRefIndexByRefName(index._1) + 1) + ".bed"
-      val hdfsBedFile = hdfsTargetBedPath + localBedFile.split("/").last
+      val localBedFile = targetBedPath + (chrTool.getRefIndexByRefName(index._1) + 1) + ".bed"
+
       val f = new File(localBedFile)
       val out = new BufferedWriter(new FileWriter(f))
       for (line <- index._2) {
         out.write(line + "\n")
       }
       out.close()
-      NGSSparkFileUtils.uploadFileToHdfs(localBedFile, hdfsBedFile)
-      NGSSparkFileUtils.deleteLocalFile(localBedFile, keep = false)
     }
-    val f = new File(NGSSparkConf.getLocalTmp(conf) + "empty.bed")
+    val f = new File(targetBedPath + "empty.bed")
     f.createNewFile()
-    NGSSparkFileUtils.uploadFileToHdfs(f.getAbsolutePath, hdfsTargetBedPath + f.getName)
-    NGSSparkFileUtils.deleteLocalFile(f.getAbsolutePath, keep = false)
-    f.deleteOnExit()
   }
 }
