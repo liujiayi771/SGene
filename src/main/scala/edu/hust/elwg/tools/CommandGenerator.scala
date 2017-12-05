@@ -37,6 +37,8 @@ object CommandGenerator {
     if (isPaired) command += bwaOption(0)
     command += bwaOption(1)
     command += numberOfThreads.toString
+    command += "-P"
+    command += "-M"
     command += bwaOption(2)
     command += readGroup
     if (useSTDIN) {
