@@ -87,9 +87,9 @@ object NGSSpark {
       .groupByKey(CHR_NUM * 2)
 //      .filter(itr => NGSSparkConf.getTargetBedChr(conf).contains(itr._1))
 
-    val firstHalf: RDD[(Int, String)] = allChrToSamRecordsRDD.sortBy(itr => itr._2.size, ascending = false).map(itr => {
+    val firstHalf: RDD[(Int, String, String)] = allChrToSamRecordsRDD.sortBy(itr => itr._2.size, ascending = false).map(itr => {
       val vc = new VariantCalling(confBC.value, itr._1)
-      vc.singleInputVariantCallFirstHalf(itr._2)
+      vc.variantCallFirstHalf(itr._2)
     })
     firstHalf.persist(StorageLevel.MEMORY_ONLY_SER)
     firstHalf.count()
@@ -99,14 +99,12 @@ object NGSSpark {
     val oneFile = tableFile.listFiles().map(_.getAbsolutePath).filter(name => name.endsWith(".table") && name.contains(readGroupIdSet(0)))
     val twoFile = tableFile.listFiles().map(_.getAbsolutePath).filter(name => name.endsWith(".table") && name.contains(readGroupIdSet(1)))
     val oneOutputTableFile = localTmp + readGroupIdSet(0) + ".table"
-    val hdfsOneOutputTableFile = TABLE + oneOutputTableFile.split("/").last
     val twoOutputTableFile = localTmp + readGroupIdSet(1) + ".table"
-    val hdfsTwoOutputTableFile = TABLE + twoOutputTableFile.split("/").last
     MergeTables.mergeTable(oneFile, twoFile, oneOutputTableFile, twoOutputTableFile)
 
     firstHalf.map(itr => {
       val vc = new VariantCalling(confBC.value, itr._1)
-      vc.singleInputVariantCallSecondHalf(itr._2, oneOutputTableFile)
+      vc.variantCallSecondHalf(itr._2, itr._3, oneOutputTableFile, twoOutputTableFile)
     }).count()
 
     //    runFromMarkDuplicates(sc, confBC, readGroupIdSet)
