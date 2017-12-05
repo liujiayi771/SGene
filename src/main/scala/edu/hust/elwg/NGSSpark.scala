@@ -16,11 +16,9 @@ import scala.io.Source
 object NGSSpark {
 
   def main(args: Array[String]): Unit = {
-    val conf: SparkConf = new SparkConf().setAppName("NGS-Spark").setMaster("local[*]")
+    val conf: SparkConf = new SparkConf().setAppName("NGS-Spark")
     conf.set("spark.scheduler.mode", "FAIR")
     conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-    conf.set("spark.driver.memory", "2g")
-    conf.set("spark.executor.memory", "2g")
     conf.registerKryoClasses(Array(classOf[MySAMRecord]))
     val sc: SparkContext = new SparkContext(conf)
     CommandLine.parseParam(args, conf)
@@ -42,11 +40,11 @@ object NGSSpark {
 
 
     /** clean tmp file **/
-//    val workerNum: Int = sc.getConf.get("spark.cores.max").toInt
-//    val worker: RDD[Int] = sc.parallelize(Range(0, workerNum), workerNum)
-//    worker.map(_ => {
-//      NGSSparkFileUtils.mkLocalDir(localTmp, delete = true)
-//    }).count()
+    //    val workerNum: Int = sc.getConf.get("spark.cores.max").toInt
+    //    val worker: RDD[Int] = sc.parallelize(Range(0, workerNum), workerNum)
+    //    worker.map(_ => {
+    //      NGSSparkFileUtils.mkLocalDir(localTmp, delete = true)
+    //    }).count()
     NGSSparkFileUtils.mkLocalDir(localTmp, delete = true)
 
     parseTargetBed(conf)
@@ -87,11 +85,11 @@ object NGSSpark {
     val allChrToSamRecordsRDD: RDD[(Int, Iterable[MySAMRecord])] = allSamRecordsRDD
       .flatMap(itr => balanceLoad(itr, chrInfo, avgSamRecords, CHR_NUM))
       .groupByKey(CHR_NUM * 2)
-//      .filter(itr => NGSSparkConf.getTargetBedChr(conf).contains(itr._1))
+    //      .filter(itr => NGSSparkConf.getTargetBedChr(conf).contains(itr._1))
 
-    val firstHalf: RDD[(Int, String, String)] = allChrToSamRecordsRDD.sortBy(itr => itr._2.size, ascending = false).map(itr => {
+    val firstHalf: RDD[(Int, String)] = allChrToSamRecordsRDD.sortBy(itr => itr._2.size, ascending = false).map(itr => {
       val vc = new VariantCalling(confBC.value, itr._1)
-      vc.variantCallFirstHalf(itr._2)
+      vc.singleInputVariantCallFirstHalf(itr._2)
     })
     firstHalf.persist(StorageLevel.MEMORY_ONLY_SER)
     firstHalf.count()
@@ -99,16 +97,12 @@ object NGSSpark {
     /** Download table file **/
     val tableFile = new File(BASE_RECALIBRATOR_TABLE)
     val oneFile = tableFile.listFiles().map(_.getAbsolutePath).filter(name => name.endsWith(".table") && name.contains(readGroupIdSet(0)))
-    val twoFile = tableFile.listFiles().map(_.getAbsolutePath).filter(name => name.endsWith(".table") && name.contains(readGroupIdSet(1)))
     val oneOutputTableFile = localTmp + readGroupIdSet(0) + ".table"
-
-    val twoOutputTableFile = localTmp + readGroupIdSet(1) + ".table"
-
-    MergeTables.mergeTable(oneFile, twoFile, oneOutputTableFile, twoOutputTableFile)
+    MergeTables.mergeTable(oneFile, oneOutputTableFile)
 
     firstHalf.map(itr => {
       val vc = new VariantCalling(confBC.value, itr._1)
-      vc.variantCallSecondHalf(itr._2, itr._3, oneOutputTableFile, twoOutputTableFile)
+      vc.singleInputVariantCallSecondHalf(itr._2, oneOutputTableFile)
     }).count()
 
     //    runFromMarkDuplicates(sc, confBC, readGroupIdSet)
@@ -358,7 +352,7 @@ object NGSSpark {
     val bedFile = NGSSparkConf.getBedFile(conf)
     val chrTool = ChromosomeTools(NGSSparkConf.getSequenceDictionary(conf))
     val targetBedPath = NGSSparkConf.getLocalTmp(conf) + "targetBed/"
-    NGSSparkFileUtils.mkHdfsDir(targetBedPath, delete = false)
+    NGSSparkFileUtils.mkLocalDir(targetBedPath, delete = false)
     val lines = Source.fromFile(bedFile).getLines
     val groupLines = lines.toList.groupBy(_.split("\\s+").head)
     for (index <- groupLines) {

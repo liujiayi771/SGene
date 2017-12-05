@@ -30,7 +30,7 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
     * @param targets output interval file
     * @param ref     reference file
     */
-  def runRealignerTargetCreator(input: String, targets: String, ref: String): Unit = {
+  def runRealignerTargetCreator(input: String, targets: String, ref: String, bed: String): Unit = {
     /**
       * example:
       * java -Xmx8g -jar GenomeAnalysisTK.jar \
@@ -49,6 +49,7 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
     command += ("-R " + ref)
     command += ("-I " + input)
     command += ("-o " + targets)
+    if (bed != "" && bed != null) command += ("-L " + bed)
     val customArgs: String = NGSSparkConf.getCustomArgs(conf, "gatk", "realignertargetcreator")
     val realignerTargetCreatorCmd = CommandGenerator.addToCommand(command.toArray, customArgs)
     Logger.INFOTIME(realignerTargetCreatorCmd.mkString(" "))
@@ -314,14 +315,14 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
         process.destroy
       }
     )
-//    sys addShutdownHook {
-//      Logger.INFO("Caught shutdown, kill process")
-//      process.destroy
-//    }
+    //    sys addShutdownHook {
+    //      Logger.INFO("Caught shutdown, kill process")
+    //      process.destroy
+    //    }
     process.exitValue
   }
 
-  def runHaplotypeCaller(input: String, output: String, ref: String, scc: Double, sec: Double): Unit = {
+  def runHaplotypeCaller(input: String, output: String, ref: String, bed: String): Unit = {
     /**
       * example:
       * java -Xmx8g -Xms8g -jar GenomeAnalysisTK.jar \
@@ -331,7 +332,7 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
       * -R ref \
       */
     val command: ArrayBuffer[String] = ArrayBuffer.empty
-    val javaCustomArgs: String = NGSSparkConf.getCustomArgs(conf, "java", "variantcaller")
+    val javaCustomArgs: String = NGSSparkConf.getCustomArgs(conf, "java", "haplotypecaller")
     command ++= java
     command += javaCustomArgs
     command += "-jar"
@@ -340,11 +341,8 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
     command += ("-R " + ref)
     command += ("-I " + input)
     command += ("-o " + output)
-    command += ("-stand_call_conf " + roundOneDecimal(scc))
-    command += ("-stand_emit_conf " + roundOneDecimal(sec))
-    command += "--no_cmdline_in_header"
-    command += "--disable_auto_index_creation_and_locking_when_reading_rods"
-    val customArgs: String = NGSSparkConf.getCustomArgs(conf, "gatk", "variantcaller")
+    if (bed != "" && bed != null) command += ("-L " + bed)
+    val customArgs: String = NGSSparkConf.getCustomArgs(conf, "gatk", "haplotypecaller")
     val haplotypeCallerCmd = CommandGenerator.addToCommand(command.toArray, customArgs)
     Logger.INFOTIME(haplotypeCallerCmd.mkString(" "))
     val process = haplotypeCallerCmd.mkString(" ").run

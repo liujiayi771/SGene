@@ -69,6 +69,63 @@ public class MergeTables {
         }
     }
 
+
+    public static void mergeTable(String[] oneFile, String oneOutputPath) {
+        try {
+            ArrayList<String[]> grpfiles = new ArrayList<String[]>();
+            grpfiles.add(oneFile);
+            ArrayList<String> OutputPath = new ArrayList<String>();
+            OutputPath.add(oneOutputPath);
+
+            for (int counter = 0; counter < grpfiles.size(); counter++) {
+                ArrayList<ArrayList<String>> waitMergeTable = new ArrayList<>();
+                ArrayList<String> finalTable;
+                String[] tablePath = grpfiles.get(counter);
+                for (int i = 0; i < tablePath.length; i++) {
+                    ArrayList<String> currentTable = new ArrayList<String>();
+                    File file = new File(tablePath[i]);
+                    if (file.isFile() && file.exists()) {
+                        InputStreamReader read = new InputStreamReader(new FileInputStream(file));
+                        BufferedReader bufferedReader = new BufferedReader(read);
+                        String line;
+                        while ((line = bufferedReader.readLine()) != null) {
+                            currentTable.add(line);
+                        }
+                        bufferedReader.close();
+                        read.close();
+                        waitMergeTable.add(currentTable);
+//                    currentTable.clear();
+                    } else {
+                        System.out.println("Can't find the table");
+                    }
+                }
+
+                //多个文件合并
+                finalTable = waitMergeTable.get(0);
+                for (int i = 1; i < waitMergeTable.size(); i++) {
+                    finalTable = mergeMethod(finalTable, waitMergeTable.get(i));
+                }
+
+                //修正finalTable的quality
+                recalEmpQuality(finalTable);
+
+                File output = new File(OutputPath.get(counter));
+                OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(output));
+                BufferedWriter bufferedWriter = new BufferedWriter(writer);
+                for (int i = 0; i < finalTable.size(); i++) {
+                    bufferedWriter.write(finalTable.get(i));
+                    bufferedWriter.newLine();
+                }
+                bufferedWriter.close();
+                writer.close();
+            }
+
+
+        } catch (Exception e) {
+            System.out.println("Merge Table failed");
+            e.printStackTrace();
+        }
+    }
     //打印整张表的信息
     public static void printTable(ArrayList<String> table) {
         if (table.size() != 0) {

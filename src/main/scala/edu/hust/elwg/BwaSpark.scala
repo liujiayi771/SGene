@@ -29,9 +29,9 @@ class BwaSpark(settings: Array[(String, String)]) {
   if (readGroupIdSet.isEmpty || readGroupIdSet.length > 2) throw new Exception("Please specify one or two read group information")
 
   def runBwaDownloadFile(fileName: String): List[(Int, MySAMRecord)] = {
-    val readGroupId = if (fileName.contains(readGroupIdSet(0))) readGroupIdSet(0) else readGroupIdSet(1)
+    val readGroupId = readGroupIdSet(0)
     val readGroup = NGSSparkConf.getReadGroup(conf, readGroupId).getBwaReadGroup()
-    val cmd = CommandGenerator.bwaMem(bin, index, fileName, null, isPaired = true, useSTDIN = false, BWAThreads, readGroup, useLocalCProgram, customArgs).mkString(" ")
+    val cmd = CommandGenerator.bwaMem(bin, index, fileName.split("file:")(1), null, isPaired = true, useSTDIN = false, BWAThreads, readGroup, useLocalCProgram, customArgs).mkString(" ")
     Logger.INFOTIME("Run command: " + cmd)
     //    val samRecords = cmd.!!
     //    val samRecordList = readSamStream(fileName, new ByteArrayInputStream(samRecords.getBytes))
@@ -118,10 +118,10 @@ class BwaSpark(settings: Array[(String, String)]) {
           val chr = if (read1Ref < NGSSparkConf.getChromosomeNum(conf)) read1Ref + 1 else OTHER_CHR_INDEX
           samRecordList = (chr, new MySAMRecord(samRecord, mCurrentLine, mateReference = false)) :: samRecordList
         }
-//        if (read2Ref >= 0 && read2Ref < NGSSparkConf.getChromosomeNum(conf) && read1Ref != read2Ref) {
-//          val chr = if (read2Ref < NGSSparkConf.getChromosomeNum(conf)) read2Ref + 1 else OTHER_CHR_INDEX
-//          samRecordList = (chr, new MySAMRecord(samRecord, mCurrentLine, mateReference = true)) :: samRecordList
-//        }
+        //        if (read2Ref >= 0 && read2Ref < NGSSparkConf.getChromosomeNum(conf) && read1Ref != read2Ref) {
+        //          val chr = if (read2Ref < NGSSparkConf.getChromosomeNum(conf)) read2Ref + 1 else OTHER_CHR_INDEX
+        //          samRecordList = (chr, new MySAMRecord(samRecord, mCurrentLine, mateReference = true)) :: samRecordList
+        //        }
       }
       mCurrentLine = mReader.readLine()
     }
