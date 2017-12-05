@@ -29,7 +29,7 @@ class BwaSpark(settings: Array[(String, String)]) {
   if (readGroupIdSet.isEmpty || readGroupIdSet.length > 2) throw new Exception("Please specify one or two read group information")
 
   def runBwaDownloadFile(fileName: String): List[(Int, MySAMRecord)] = {
-    val readGroupId = readGroupIdSet(0)
+    val readGroupId = if (fileName.contains(readGroupIdSet(0))) readGroupIdSet(0) else readGroupIdSet(1)
     val readGroup = NGSSparkConf.getReadGroup(conf, readGroupId).getBwaReadGroup()
     val cmd = CommandGenerator.bwaMem(bin, index, fileName.split("file:")(1), null, isPaired = true, useSTDIN = false, BWAThreads, readGroup, useLocalCProgram, customArgs).mkString(" ")
     Logger.INFOTIME("Run command: " + cmd)
