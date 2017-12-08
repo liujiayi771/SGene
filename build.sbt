@@ -25,6 +25,7 @@ libraryDependencies += "org.sellmerfud" % "optparse_2.11" % "2.2"
 //    ((cp filter { !unobfuscated.contains(_) }).files ++ obfuscated).classpath
 //}
 //
+
 assemblyMergeStrategy in assembly := {
   case PathList("META-INF", xs @ _*) => MergeStrategy.discard
   case x => MergeStrategy.first

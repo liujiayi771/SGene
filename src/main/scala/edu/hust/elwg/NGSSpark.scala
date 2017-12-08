@@ -8,7 +8,7 @@ import edu.hust.elwg.utils._
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.storage.StorageLevel
-import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.{HashPartitioner, SparkConf, SparkContext}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
@@ -17,9 +17,9 @@ object NGSSpark {
 
   def main(args: Array[String]): Unit = {
     val conf: SparkConf = new SparkConf().setAppName("NGS-Spark")
-    conf.set("spark.scheduler.mode", "FAIR")
-    conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-    conf.registerKryoClasses(Array(classOf[MySAMRecord]))
+//    conf.set("spark.scheduler.mode", "FAIR")
+//    conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+//    conf.registerKryoClasses(Array(classOf[MySAMRecord]))
     val sc: SparkContext = new SparkContext(conf)
     CommandLine.parseParam(args, conf)
     val CHR_NUM = 24
@@ -82,15 +82,28 @@ object NGSSpark {
       (record._1, (record._2, ChromosomeTools(NGSSparkConf.getSequenceDictionary(conf)).chrLen(record._1)))
     }).collect.toMap
 
-    val allChrToSamRecordsRDD: RDD[(Int, Iterable[MySAMRecord])] = allSamRecordsRDD
-      .flatMap(itr => balanceLoad(itr, chrInfo, avgSamRecords, CHR_NUM))
-      .groupByKey(CHR_NUM * 2)
+//    val allChrToSamRecordsRDD: RDD[(Int, Iterable[MySAMRecord])] = allSamRecordsRDD
+//      .flatMap(itr => balanceLoad(itr, chrInfo, avgSamRecords, CHR_NUM))
+//      .groupByKey(CHR_NUM * 2)
 //      .filter(itr => NGSSparkConf.getTargetBedChr(conf).contains(itr._1))
 
-    val firstHalf: RDD[(Int, String, String)] = allChrToSamRecordsRDD.sortBy(itr => itr._2.size, ascending = false).map(itr => {
-      val vc = new VariantCalling(confBC.value, itr._1)
-      vc.variantCallFirstHalf(itr._2)
+    val allChrToSamRecordsRDD: RDD[(Int, MySAMRecord)] = allSamRecordsRDD
+      .flatMap(itr => balanceLoad(itr, chrInfo, avgSamRecords, CHR_NUM))
+
+    val firstHalf: RDD[(Int, String, String)]= allChrToSamRecordsRDD.partitionBy(new HashPartitioner(CHR_NUM * 2)).mapPartitions(record => {
+      if (record.hasNext) {
+        val regionId = record.next()._1
+        val vc = new VariantCalling(confBC.value, regionId)
+        List(vc.variantCallFirstHalf(record.map(x => x._2).toIterable)).toIterator
+      } else {
+        Iterator.empty
+      }
     })
+
+//    val firstHalf: RDD[(Int, String, String)] = allChrToSamRecordsRDD.map(itr => {
+//      val vc = new VariantCalling(confBC.value, itr._1)
+//      vc.variantCallFirstHalf(itr._2)
+//    })
     firstHalf.persist(StorageLevel.MEMORY_ONLY_SER)
     firstHalf.count()
 

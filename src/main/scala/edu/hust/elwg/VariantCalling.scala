@@ -46,6 +46,7 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
 
   if (readGroupIdSet.isEmpty || readGroupIdSet.length > 2) throw new Exception("Please specify one or two read group information")
 
+  def this(settings: Array[(String, String)], )
   def variantCallFirstHalf(unsortedSamRecords: Iterable[MySAMRecord]): (Int, String, String) = {
     Logger.INFOTIME("Processing chromosome region [first]: " + regionId)
     Logger.INFOTIME("size: " + unsortedSamRecords.size)
