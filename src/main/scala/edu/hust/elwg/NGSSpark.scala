@@ -72,9 +72,9 @@ object NGSSpark {
     //    })
 
     allSamRecordsRDD.persist(StorageLevel.MEMORY_ONLY_SER)
-    allSamRecordsRDD.count()
+    val samRecordsSize = allSamRecordsRDD.count()
 
-    val avgSamRecords: Long = allSamRecordsRDD.count / (CHR_NUM + 1)
+    val avgSamRecords: Long = samRecordsSize / (CHR_NUM + 1)
     val chrToNumSamRecs: RDD[(Int, Int)] = allSamRecordsRDD.filter(_._1 != OTHER_CHR_INDEX).map(record => (record._1, 1)).reduceByKey(_ + _)
     val chrInfo: Map[Int, (Int, Int)] = chrToNumSamRecs.map(record => {
       val conf: SparkConf = new SparkConf()
