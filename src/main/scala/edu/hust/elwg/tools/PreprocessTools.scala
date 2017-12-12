@@ -102,7 +102,7 @@ class PreprocessTools(val bin: String, conf: SparkConf) {
     process.exitValue
   }
 
-  def runMarkDuplicates(input: String, output: String, metrics: String, keepDups: Boolean): Unit = {
+  def runMarkDuplicates(input: String, output: String, metrics: String): Unit = {
     val tool: String = if (bin.endsWith("/")) bin + PicardTools(4) else bin + "/" + PicardTools(4)
     val command: ArrayBuffer[String] = ArrayBuffer.empty
     val javaCustomArgs: String = NGSSparkConf.getCustomArgs(conf, "java", "markduplicates")
@@ -114,10 +114,6 @@ class PreprocessTools(val bin: String, conf: SparkConf) {
     command += ("INPUT=" + input)
     command += ("OUTPUT=" + output)
     command += ("METRICS_FILE=" + metrics)
-    command += "ASO=coordinate"
-    command += "OPTICAL_DUPLICATE_PIXEL_DISTANCE=100"
-    command += "VALIDATION_STRINGENCY=LENIENT"
-    if (!keepDups) command += "REMOVE_DUPLICATES=true"
     val customArgs: String = NGSSparkConf.getCustomArgs(conf, "picard", "markduplicates")
     val picardMarkduplicatesCmd: Array[String] = CommandGenerator.addToCommand(command.toArray, customArgs)
     val process = picardMarkduplicatesCmd.mkString(" ").run
