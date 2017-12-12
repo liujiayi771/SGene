@@ -42,7 +42,6 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
   val splitBed: Boolean = false
   val keep: Boolean = false
   val upload: Boolean = true
-  val keepDups: Boolean = true
 
   if (readGroupIdSet.isEmpty || readGroupIdSet.length > 2) throw new Exception("Please specify one or two read group information")
 
@@ -429,7 +428,7 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     val markDuplicatesMetricsFile = tmpFileBase + "-" + rg.RGID + "-metrics.txt"
     val nfsMarkDuplicatesMetricsFile = MARK_DUPLICATES_METRICS_DIR + markDuplicatesMetricsFile.split("/").last
 
-    tools.runMarkDuplicates(inputBamFile, nfsMarkDuplicatesOutFile, nfsMarkDuplicatesMetricsFile, keepDups = false)
+    tools.runMarkDuplicates(inputBamFile, nfsMarkDuplicatesOutFile, nfsMarkDuplicatesMetricsFile)
 
     // Generate the bai file of the bam file
     tools.runBuildBamIndexPicard(nfsMarkDuplicatesOutFile)
