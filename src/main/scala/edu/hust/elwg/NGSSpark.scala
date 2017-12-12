@@ -385,28 +385,30 @@ object NGSSpark {
 
   def parseTargetBed(conf: SparkConf): Unit = {
     val bedFile = NGSSparkConf.getBedFile(conf)
-    val chrTool = ChromosomeTools(NGSSparkConf.getSequenceDictionary(conf))
-    val hdfsTargetBedPath = NGSSparkConf.getHdfsTmp(conf) + "targetBed/"
-    NGSSparkFileUtils.mkHdfsDir(hdfsTargetBedPath, delete = true)
-    val lines = Source.fromFile(bedFile).getLines
-    val groupLines = lines.toList.groupBy(_.split("\\s+").head)
-    for (index <- groupLines) {
-      NGSSparkConf.setTargetBedChr(conf, chrTool.getRefIndexByRefName(index._1) + 1)
-      val localBedFile = NGSSparkConf.getLocalTmp(conf) + (chrTool.getRefIndexByRefName(index._1) + 1) + ".bed"
-      val hdfsBedFile = hdfsTargetBedPath + localBedFile.split("/").last
-      val f = new File(localBedFile)
-      val out = new BufferedWriter(new FileWriter(f))
-      for (line <- index._2) {
-        out.write(line + "\n")
+    if (bedFile != "") {
+      val chrTool = ChromosomeTools(NGSSparkConf.getSequenceDictionary(conf))
+      val hdfsTargetBedPath = NGSSparkConf.getHdfsTmp(conf) + "targetBed/"
+      NGSSparkFileUtils.mkHdfsDir(hdfsTargetBedPath, delete = true)
+      val lines = Source.fromFile(bedFile).getLines
+      val groupLines = lines.toList.groupBy(_.split("\\s+").head)
+      for (index <- groupLines) {
+        NGSSparkConf.setTargetBedChr(conf, chrTool.getRefIndexByRefName(index._1) + 1)
+        val localBedFile = NGSSparkConf.getLocalTmp(conf) + (chrTool.getRefIndexByRefName(index._1) + 1) + ".bed"
+        val hdfsBedFile = hdfsTargetBedPath + localBedFile.split("/").last
+        val f = new File(localBedFile)
+        val out = new BufferedWriter(new FileWriter(f))
+        for (line <- index._2) {
+          out.write(line + "\n")
+        }
+        out.close()
+        NGSSparkFileUtils.uploadFileToHdfs(localBedFile, hdfsBedFile)
+        NGSSparkFileUtils.deleteLocalFile(localBedFile, keep = false)
       }
-      out.close()
-      NGSSparkFileUtils.uploadFileToHdfs(localBedFile, hdfsBedFile)
-      NGSSparkFileUtils.deleteLocalFile(localBedFile, keep = false)
+      val f = new File(NGSSparkConf.getLocalTmp(conf) + "empty.bed")
+      f.createNewFile()
+      NGSSparkFileUtils.uploadFileToHdfs(f.getAbsolutePath, hdfsTargetBedPath + f.getName)
+      NGSSparkFileUtils.deleteLocalFile(f.getAbsolutePath, keep = false)
+      f.deleteOnExit()
     }
-    val f = new File(NGSSparkConf.getLocalTmp(conf) + "empty.bed")
-    f.createNewFile()
-    NGSSparkFileUtils.uploadFileToHdfs(f.getAbsolutePath, hdfsTargetBedPath + f.getName)
-    NGSSparkFileUtils.deleteLocalFile(f.getAbsolutePath, keep = false)
-    f.deleteOnExit()
   }
 }

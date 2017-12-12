@@ -44,8 +44,7 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
 
   val splitBed: Boolean = false
   val keep: Boolean = false
-  val upload: Boolean = true
-  val keepDups: Boolean = true
+  val upload: Boolean = false
 
   if (readGroupIdSet.isEmpty || readGroupIdSet.length > 2) throw new Exception("Please specify one or two read group information")
 
@@ -146,8 +145,8 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     tools.runBuildBamIndexPicard(localInputBamFileTwo)
 
     // Run printReads
-    val printReadsFileOne = printReads(NGSSparkConf.getReadGroup(conf, readGroupIdSet(0)), localInputBamFileOne, localInputTableOne)
-    val printReadsFileTwo = printReads(NGSSparkConf.getReadGroup(conf, readGroupIdSet(1)), localInputBamFileTwo, localInputTableTwo)
+    val printReadsFileOne = printReads(NGSSparkConf.getReadGroup(conf, readGroupIdSet(0)), localInputBamFileOne, "/home/spark/NA12878MOD_sort_markdup_realign.grp")
+    val printReadsFileTwo = printReads(NGSSparkConf.getReadGroup(conf, readGroupIdSet(1)), localInputBamFileTwo, "/home/spark/SRR098401_sort_markdup_realign.grp")
 
     // Run mutect2
     val vcfOutputFile = mutect2(printReadsFileOne, printReadsFileTwo)
@@ -392,7 +391,7 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     val markDuplicatesMetricsFile = tmpFileBase + "-" + rg.RGID + "-metrics.txt"
     val hdfsMarkDuplicatesMetricsFile = MARK_DUPLICATES_METRICS_DIR + markDuplicatesMetricsFile.split("/").last
 
-    tools.runMarkDuplicates(inputBamFile, markDuplicatesOutFile, markDuplicatesMetricsFile, keepDups)
+    tools.runMarkDuplicates(inputBamFile, markDuplicatesOutFile, markDuplicatesMetricsFile)
 
     // Generate the bai file of the bam file
     tools.runBuildBamIndexPicard(markDuplicatesOutFile)

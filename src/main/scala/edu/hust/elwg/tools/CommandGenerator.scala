@@ -15,7 +15,9 @@ object CommandGenerator {
   val bwaOption: Array[String] = Array(
     "-p", // 0: paired (interleaved file)
     "-t", // 1: number of threads for bwa program
-    "-R"  // 2: readGroup information
+    "-R",  // 2: readGroup information
+    "-P", // 3: perform SW to rescue missing hits only but do not try to find hits that fit a proper pair
+    "-M" // 4: mark shorter split hits as secondary (for Picard compatibility)
   )
 
   def bwaMem(
@@ -37,6 +39,8 @@ object CommandGenerator {
     if (isPaired) command += bwaOption(0)
     command += bwaOption(1)
     command += numberOfThreads.toString
+    command += bwaOption(3)
+    command += bwaOption(4)
     command += bwaOption(2)
     command += readGroup
     if (useSTDIN) {
