@@ -103,7 +103,7 @@ object NGSSpark {
     val allChrToSamRecordsRDD: RDD[(Int, MySAMRecord)] = allSamRecordsRDD
       .flatMap(itr => balanceLoad(itr, chrInfo, avgSamRecords, CHR_NUM))
 
-    val firstHalf: RDD[(Int, String, String)]= allChrToSamRecordsRDD.partitionBy(new HashPartitioner(CHR_NUM * 2 + 2)).mapPartitions(record => {
+    val firstHalf: RDD[(Int, String, String)]= allChrToSamRecordsRDD.partitionBy(new HashPartitioner((CHR_NUM + 1) * 2)).mapPartitions(record => {
       if (record.hasNext) {
         val regionId = record.next()._1
         val vc = new VariantCalling(confBC.value, regionId)
