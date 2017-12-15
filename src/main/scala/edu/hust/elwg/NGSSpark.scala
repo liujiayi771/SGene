@@ -8,7 +8,7 @@ import edu.hust.elwg.utils._
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.storage.StorageLevel
-import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.{HashPartitioner, SparkConf, SparkContext}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
@@ -23,7 +23,7 @@ object NGSSpark {
     val sc: SparkContext = new SparkContext(conf)
     CommandLine.parseParam(args, conf)
     val CHR_NUM = 24
-    val OTHER_CHR_INDEX = 99
+    val OTHER_CHR_INDEX = 49
     NGSSparkConf.setChromosomeNum(conf, CHR_NUM)
     NGSSparkConf.setOtherChrIndex(conf, OTHER_CHR_INDEX)
 
@@ -40,11 +40,13 @@ object NGSSpark {
 
 
     /** clean tmp file **/
-    //    val workerNum: Int = sc.getConf.get("spark.cores.max").toInt
-    //    val worker: RDD[Int] = sc.parallelize(Range(0, workerNum), workerNum)
-    //    worker.map(_ => {
-    //      NGSSparkFileUtils.mkLocalDir(localTmp, delete = true)
-    //    }).count()
+    /*
+    val workerNum: Int = sc.getConf.get("spark.cores.max").toInt
+    val worker: RDD[Int] = sc.parallelize(Range(0, workerNum), workerNum)
+    worker.map(_ => {
+      NGSSparkFileUtils.mkLocalDir(localTmp, delete = true)
+    }).count()
+    */
     NGSSparkFileUtils.mkLocalDir(localTmp, delete = true)
 
     parseTargetBed(conf)
@@ -63,13 +65,15 @@ object NGSSpark {
       bwa.runBwaDownloadFile(itr._1)
     })
 
-    //    val allSamRecordsRDD = sc.textFile("data/normal.sam").mapPartitions(itr => {
-    //      val v = new VariantCalling(confBC.value, 0)
-    //      v.readStream(0, itr).toIterator
-    //    }) ++ sc.textFile("data/case.sam").mapPartitions(itr => {
-    //      val v = new VariantCalling(confBC.value, 0)
-    //      v.readStream(1, itr).toIterator
-    //    })
+    /*
+    val allSamRecordsRDD = sc.textFile("data/normal.sam").mapPartitions(itr => {
+      val v = new VariantCalling(confBC.value, 0)
+      v.readStream(0, itr).toIterator
+    }) ++ sc.textFile("data/case.sam").mapPartitions(itr => {
+      val v = new VariantCalling(confBC.value, 0)
+      v.readStream(1, itr).toIterator
+    })
+    */
 
     allSamRecordsRDD.persist(StorageLevel.MEMORY_ONLY_SER)
     val samRecordsSize = allSamRecordsRDD.count()
@@ -82,15 +86,33 @@ object NGSSpark {
       (record._1, (record._2, ChromosomeTools(NGSSparkConf.getSequenceDictionary(conf)).chrLen(record._1)))
     }).collect.toMap
 
+    /*
     val allChrToSamRecordsRDD: RDD[(Int, Iterable[MySAMRecord])] = allSamRecordsRDD
       .flatMap(itr => balanceLoad(itr, chrInfo, avgSamRecords, CHR_NUM))
       .groupByKey(CHR_NUM * 2)
-    //      .filter(itr => NGSSparkConf.getTargetBedChr(conf).contains(itr._1))
+      .filter(itr => NGSSparkConf.getTargetBedChr(conf).contains(itr._1))
+    */
 
+    val allChrToSamRecordsRDD: RDD[(Int, MySAMRecord)] = allSamRecordsRDD
+      .flatMap(itr => balanceLoad(itr, chrInfo, avgSamRecords, CHR_NUM))
+
+    val firstHalf: RDD[(Int, String)] = allChrToSamRecordsRDD.partitionBy(new HashPartitioner((CHR_NUM + 1) * 2)).mapPartitions(record => {
+      if (record.hasNext) {
+        val regionId = record.next()._1
+        val vc = new VariantCalling(confBC.value, regionId)
+        List(vc.singleInputVariantCallFirstHalf(record.map(x => x._2).toIterable)).toIterator
+      } else {
+        Iterator.empty
+      }
+    })
+
+    /*
     val firstHalf: RDD[(Int, String)] = allChrToSamRecordsRDD.sortBy(itr => itr._2.size, ascending = false).map(itr => {
       val vc = new VariantCalling(confBC.value, itr._1)
       vc.singleInputVariantCallFirstHalf(itr._2)
     })
+    */
+
     firstHalf.persist(StorageLevel.MEMORY_ONLY_SER)
     firstHalf.count()
 
@@ -105,9 +127,11 @@ object NGSSpark {
       vc.singleInputVariantCallSecondHalf(itr._2, oneOutputTableFile)
     }).count()
 
-    //    runFromMarkDuplicates(sc, confBC, readGroupIdSet)
-    //    runFromMutect2(sc, confBC, readGroupIdSet)
-    //    runFromBQSR(sc, confBC, readGroupIdSet)
+    /*
+    runFromMarkDuplicates(sc, confBC, readGroupIdSet)
+    runFromMutect2(sc, confBC, readGroupIdSet)
+    runFromBQSR(sc, confBC, readGroupIdSet)
+    */
 
     /** Download vcf files from HDFS **/
     var vcfFiles = new File(MUTECT2_DIR).listFiles().map(_.getAbsolutePath).filter(_.endsWith(".vcf"))
