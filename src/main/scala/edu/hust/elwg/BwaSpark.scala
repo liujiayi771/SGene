@@ -33,8 +33,12 @@ class BwaSpark(settings: Array[(String, String)]) {
     val readGroup = NGSSparkConf.getReadGroup(conf, readGroupId).getBwaReadGroup()
     val cmd = CommandGenerator.bwaMem(bin, index, fileName.split("file:")(1), null, isPaired = true, useSTDIN = false, BWAThreads, readGroup, useLocalCProgram, customArgs).mkString(" ")
     Logger.INFOTIME("Run command: " + cmd)
-    //    val samRecords = cmd.!!
-    //    val samRecordList = readSamStream(fileName, new ByteArrayInputStream(samRecords.getBytes))
+
+    /*
+    val samRecords = cmd.!!
+    val samRecordList = readSamStream(fileName, new ByteArrayInputStream(samRecords.getBytes))
+    */
+
     var samRecordList: List[(Int, MySAMRecord)] = Nil
     val io = new ProcessIO(
       in => {},

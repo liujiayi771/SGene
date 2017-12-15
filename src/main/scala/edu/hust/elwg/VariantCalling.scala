@@ -34,6 +34,7 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
   val BASE_RECALIBRATOR_TABLE: String = localTmp + "base_recalibrator_table/"
   val PRINT_READS_DIR: String = localTmp + "print_reads_bam/"
   val MUTECT2_DIR: String = localTmp + "vcf/"
+  val OTHER_CHR_INDEX: Int = NGSSparkConf.getOtherChrIndex(conf)
 
   val dict: SAMSequenceDictionary = NGSSparkConf.getSequenceDictionary(conf)
   val header: SAMFileHeader = new SAMFileHeader()
@@ -383,7 +384,7 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
       val read2Ref = sam.getMateReferenceIndex
       if (!sam.getReadUnmappedFlag &&
         (read1Ref >= 0 || read2Ref >= 0)) {
-        val chr = if (referenceIndex >= 0 && referenceIndex < NGSSparkConf.getChromosomeNum(conf)) referenceIndex + 1 else 99
+        val chr = if (referenceIndex >= 0 && referenceIndex < NGSSparkConf.getChromosomeNum(conf)) referenceIndex + 1 else OTHER_CHR_INDEX
         samRecordList = (chr, new MySAMRecord(sam, itr, mateReference = true)) :: samRecordList
       }
     }
@@ -581,6 +582,7 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
 
     val vcfOutFile = tmpFileBase + ".vcf"
 
+    /*
     val bed =
       if (useSplitTargetBed) {
         if (NGSSparkConf.getTargetBedChr(conf).contains(chrId)) {
@@ -592,6 +594,14 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
         }
       } else {
         ""
+      }
+    */
+
+    val bed =
+      if (chrId <= 23) {
+        ChromosomeTools.chromosomeTools.getRefNameByRefIndex(chrId - 1)
+      } else {
+        "/home/spark/GATK/otherChr.list"
       }
 
     gatk.runMuTect2(inputBamFileOne, inputBamFileTwo, vcfOutFile, index, bed)

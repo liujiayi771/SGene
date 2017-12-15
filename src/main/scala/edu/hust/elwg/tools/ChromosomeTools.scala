@@ -10,6 +10,10 @@ class ChromosomeTools(val dict: SAMSequenceDictionary) {
   def getRefIndexByRefName(name: String): Int = {
     dict.getSequenceIndex(name)
   }
+
+  def getRefNameByRefIndex(index: Int): String = {
+    dict.getSequence(index).getSequenceName
+  }
 }
 
 object ChromosomeTools {
