@@ -6,8 +6,6 @@ import java.net.URISyntaxException
 import edu.hust.elwg.tools._
 import edu.hust.elwg.utils.{Logger, NGSSparkConf, NGSSparkFileUtils}
 import htsjdk.samtools._
-import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.FileSystem
 import org.apache.spark.SparkConf
 
 import scala.io.Source
@@ -37,6 +35,7 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
   val BASE_RECALIBRATOR_TABLE: String = hdfsTmp + "base_recalibrator_table/"
   val PRINT_READS_DIR: String = hdfsTmp + "print_reads_bam/"
   val MUTECT2_DIR: String = hdfsTmp + "vcf/"
+  val OTHER_CHR_INDEX: Int = NGSSparkConf.getOtherChrIndex(conf)
 
   val dict: SAMSequenceDictionary = NGSSparkConf.getSequenceDictionary(conf)
   val header: SAMFileHeader = new SAMFileHeader()
@@ -50,9 +49,8 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
 
   def variantCallFirstHalf(unsortedSamRecords: Iterable[MySAMRecord]): (Int, String, String) = {
     Logger.INFOTIME("Processing chromosome region [first]: " + regionId)
-    Logger.INFOTIME("size: " + unsortedSamRecords.size)
 
-    implicit val samRecordOrdering = new Ordering[MySAMRecord] {
+    implicit val samRecordOrdering: Ordering[MySAMRecord] = new Ordering[MySAMRecord] {
       override def compare(x: MySAMRecord, y: MySAMRecord): Int = {
         if (x.referenceIndex != y.referenceIndex) x.referenceIndex - y.referenceIndex
         else {
@@ -95,7 +93,6 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
 
   def variantCallFirstHalfSamtoolsSort(unsortedSamRecords: Iterable[MySAMRecord]): (Int, String, String) = {
     Logger.INFOTIME("Processing chromosome region [first]: " + regionId)
-    Logger.INFOTIME("size: " + unsortedSamRecords.size)
     val tools = new PreprocessTools(bin, conf)
 
     val samRecordsListOne = unsortedSamRecords.filter(_.RGID == readGroupIdSet(0)).toArray
@@ -145,8 +142,8 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     tools.runBuildBamIndexPicard(localInputBamFileTwo)
 
     // Run printReads
-    val printReadsFileOne = printReads(NGSSparkConf.getReadGroup(conf, readGroupIdSet(0)), localInputBamFileOne, "/home/spark/NA12878MOD_sort_markdup_realign.grp")
-    val printReadsFileTwo = printReads(NGSSparkConf.getReadGroup(conf, readGroupIdSet(1)), localInputBamFileTwo, "/home/spark/SRR098401_sort_markdup_realign.grp")
+    val printReadsFileOne = printReads(NGSSparkConf.getReadGroup(conf, readGroupIdSet(0)), localInputBamFileOne, localInputTableOne)
+    val printReadsFileTwo = printReads(NGSSparkConf.getReadGroup(conf, readGroupIdSet(1)), localInputBamFileTwo, localInputTableTwo)
 
     // Run mutect2
     val vcfOutputFile = mutect2(printReadsFileOne, printReadsFileTwo)
@@ -160,7 +157,7 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     Logger.INFOTIME("Processing chromosome region [whole genome]: " + regionId)
 
     // Sorting
-    implicit val samRecordOrdering = new Ordering[MySAMRecord] {
+    implicit val samRecordOrdering: Ordering[MySAMRecord] = new Ordering[MySAMRecord] {
       override def compare(x: MySAMRecord, y: MySAMRecord): Int = {
         if (x.referenceIndex != y.referenceIndex) x.referenceIndex - y.referenceIndex
         else {
@@ -343,7 +340,7 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
       val read2Ref = sam.getMateReferenceIndex
       if (!sam.getReadUnmappedFlag &&
         (read1Ref >= 0 || read2Ref >= 0)) {
-        val chr = if (referenceIndex >= 0 && referenceIndex < NGSSparkConf.getChromosomeNum(conf)) referenceIndex + 1 else 99
+        val chr = if (referenceIndex >= 0 && referenceIndex < NGSSparkConf.getChromosomeNum(conf)) referenceIndex + 1 else OTHER_CHR_INDEX
         samRecordList = (chr, new MySAMRecord(sam, itr, mateReference = true)) :: samRecordList
       }
     }
@@ -537,19 +534,25 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     tools.runBuildBamIndexPicard(inputBamFileOne)
     tools.runBuildBamIndexPicard(inputBamFileTwo)
 
-    val bed =
-      if (useSplitTargetBed) {
-        if (NGSSparkConf.getTargetBedChr(conf).contains(chrId)) {
-          NGSSparkFileUtils.downloadFileFromHdfs(TARGET_BED_DIR + chrId + ".bed", localTmp + chrId + ".bed")
-          localTmp + chrId + ".bed"
-        } else {
-          NGSSparkFileUtils.downloadFileFromHdfs(TARGET_BED_DIR + "empty.bed", localTmp + "empty.bed")
-          localTmp + "empty.bed"
-        }
-      } else {
-        ""
-      }
+//    val bed =
+//      if (useSplitTargetBed) {
+//        if (NGSSparkConf.getTargetBedChr(conf).contains(chrId)) {
+//          NGSSparkFileUtils.downloadFileFromHdfs(TARGET_BED_DIR + chrId + ".bed", localTmp + chrId + ".bed")
+//          localTmp + chrId + ".bed"
+//        } else {
+//          NGSSparkFileUtils.downloadFileFromHdfs(TARGET_BED_DIR + "empty.bed", localTmp + "empty.bed")
+//          localTmp + "empty.bed"
+//        }
+//      } else {
+//        ""
+//      }
 
+    val bed =
+      if (chrId <= 23) {
+        ChromosomeTools.chromosomeTools.getRefNameByRefIndex(chrId - 1)
+      } else {
+        "/home/spark/GATK/otherChr.list"
+      }
     gatk.runMuTect2(inputBamFileOne, inputBamFileTwo, vcfOutFile, index, bed)
 
     NGSSparkFileUtils.deleteLocalFile(inputBamFileOne, keep)
@@ -569,10 +572,9 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
         NGSSparkFileUtils.uploadFileToHdfs(vcfOutputFile, hdfsVcfOutputFile)
         NGSSparkFileUtils.uploadFileToHdfs(vcfOutputFile + ".idx", hdfsVcfOutputFile + ".idx")
       } catch {
-        case e: URISyntaxException => {
+        case e: URISyntaxException =>
           Logger.EXCEPTION(e)
           throw new InterruptedException
-        }
       }
     } else if (vcfOutputFile != "") Logger.DEBUG("empty vcf file, not uploaded to vcf to avoid error when merging.")
   }

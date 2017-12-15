@@ -23,7 +23,7 @@ object NGSSpark {
     val sc: SparkContext = new SparkContext(conf)
     CommandLine.parseParam(args, conf)
     val CHR_NUM = 24
-    val OTHER_CHR_INDEX = 99
+    val OTHER_CHR_INDEX = 49
     NGSSparkConf.setChromosomeNum(conf, CHR_NUM)
     NGSSparkConf.setOtherChrIndex(conf, OTHER_CHR_INDEX)
 
@@ -38,11 +38,14 @@ object NGSSpark {
     val TABLE: String = hdfsTmp + "table/"
     val MUTECT2_DIR: String = hdfsTmp + "vcf/"
     val chrTools = ChromosomeTools(NGSSparkConf.getSequenceDictionary(conf))
+
+    /*
     val desFile = System.getenv("SPARK_HOME") + "/data/timestamp"
     val des = new DesUtils(NGSSparkConf.des)
     val mm = check(desFile, des)
     if (mm > NGSSparkConf.runExpired) throw new Exception("Timestamp expired")
     val startTime = System.currentTimeMillis()
+    */
 
     /** clean tmp file **/
     val workerNum: Int = sc.getConf.get("spark.cores.max").toInt
@@ -69,13 +72,15 @@ object NGSSpark {
       bwa.runBwaDownloadFile(itr._1)
     })
 
-    //    val allSamRecordsRDD = sc.textFile("data/normal.sam").mapPartitions(itr => {
-    //      val v = new VariantCalling(confBC.value, 0)
-    //      v.readStream(0, itr).toIterator
-    //    }) ++ sc.textFile("data/case.sam").mapPartitions(itr => {
-    //      val v = new VariantCalling(confBC.value, 0)
-    //      v.readStream(1, itr).toIterator
-    //    })
+    /*
+    val allSamRecordsRDD = sc.textFile("data/normal.sam").mapPartitions(itr => {
+      val v = new VariantCalling(confBC.value, 0)
+      v.readStream(0, itr).toIterator
+    }) ++ sc.textFile("data/case.sam").mapPartitions(itr => {
+      val v = new VariantCalling(confBC.value, 0)
+      v.readStream(1, itr).toIterator
+    })
+    */
 
     allSamRecordsRDD.persist(StorageLevel.MEMORY_ONLY_SER)
     val samRecordsSize: Long = allSamRecordsRDD.count()
@@ -88,14 +93,17 @@ object NGSSpark {
       (record._1, (record._2, ChromosomeTools(NGSSparkConf.getSequenceDictionary(conf)).chrLen(record._1)))
     }).collect.toMap
 
-//    val allChrToSamRecordsRDD: RDD[(Int, Iterable[MySAMRecord])] = allSamRecordsRDD
-//      .flatMap(itr => balanceLoad(itr, chrInfo, avgSamRecords, CHR_NUM))
-//      .groupByKey(CHR_NUM * 2)
-//      .filter(itr => NGSSparkConf.getTargetBedChr(conf).contains(itr._1))
+    /*
+    val allChrToSamRecordsRDD: RDD[(Int, Iterable[MySAMRecord])] = allSamRecordsRDD
+      .flatMap(itr => balanceLoad(itr, chrInfo, avgSamRecords, CHR_NUM))
+      .groupByKey(CHR_NUM * 2)
+      .filter(itr => NGSSparkConf.getTargetBedChr(conf).contains(itr._1))
+    */
 
     val allChrToSamRecordsRDD: RDD[(Int, MySAMRecord)] = allSamRecordsRDD
       .flatMap(itr => balanceLoad(itr, chrInfo, avgSamRecords, CHR_NUM))
-    val firstHalf: RDD[(Int, String, String)]= allChrToSamRecordsRDD.partitionBy(new HashPartitioner(CHR_NUM * 2)).mapPartitions(record => {
+
+    val firstHalf: RDD[(Int, String, String)]= allChrToSamRecordsRDD.partitionBy(new HashPartitioner(CHR_NUM * 2 + 2)).mapPartitions(record => {
       if (record.hasNext) {
         val regionId = record.next()._1
         val vc = new VariantCalling(confBC.value, regionId)
@@ -105,10 +113,13 @@ object NGSSpark {
       }
     })
 
-    //    val firstHalf: RDD[(Int, String, String)] = allChrToSamRecordsRDD.sortBy(itr => itr._2.size, ascending = false).map(itr => {
-//      val vc = new VariantCalling(confBC.value, itr._1)
-//      vc.variantCallFirstHalf(itr._2)
-//    })
+    /*
+    val firstHalf: RDD[(Int, String, String)] = allChrToSamRecordsRDD.sortBy(itr => itr._2.size, ascending = false).map(itr => {
+      val vc = new VariantCalling(confBC.value, itr._1)
+      vc.variantCallFirstHalf(itr._2)
+    })
+    */
+
     firstHalf.persist(StorageLevel.MEMORY_ONLY_SER)
     firstHalf.count()
 
@@ -132,9 +143,11 @@ object NGSSpark {
       vc.variantCallSecondHalf(itr._2, itr._3, hdfsOneOutputTableFile, hdfsTwoOutputTableFile)
     }).count()
 
-    //    runFromMarkDuplicates(sc, confBC, readGroupIdSet)
-    //    runFromMutect2(sc, confBC, readGroupIdSet)
-    //    runFromBQSR(sc, confBC, readGroupIdSet)
+    /*
+    runFromMarkDuplicates(sc, confBC, readGroupIdSet)
+    runFromMutect2(sc, confBC, readGroupIdSet)
+    runFromBQSR(sc, confBC, readGroupIdSet)
+    */
 
     /** Download vcf files from HDFS **/
     val localVcfDir = localTmp + MUTECT2_DIR.split("/").last
@@ -156,12 +169,14 @@ object NGSSpark {
 
     tools.runSortVcf(vcfFiles, outputPrefix + "-" + Timer.getGlobalDate + ".vcf")
 
-
+    /*
     val endTime = System.currentTimeMillis()
     val runTime = mm + (endTime - startTime) / 1000 / 60
     val out = new BufferedWriter(new FileWriter(desFile))
     out.write(des.encrypt("###$" + runTime + "$###"))
     out.close()
+    */
+
     sc.stop()
   }
 
