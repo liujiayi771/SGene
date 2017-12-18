@@ -59,9 +59,9 @@ object NGSSpark {
     parseTargetBed(conf)
     val confBC: Broadcast[Array[(String, String)]] = sc.broadcast(conf.getAll)
 
-    val inputChunkFileRDD: RDD[(String, String)] = if (inputDirs.length == 1) {
+    val inputChunkFileRDD: RDD[(String, String)] = if (inputDirs.lengthCompare(1) == 0) {
       sc.wholeTextFiles(inputDirs.head, partitionNum)
-    } else if (inputDirs.length == 2) {
+    } else if (inputDirs.lengthCompare(2) == 0) {
       sc.wholeTextFiles(inputDirs.head, partitionNum) ++ sc.wholeTextFiles(inputDirs(1), partitionNum)
     } else {
       throw new IOException("Please specify one or two input directory")

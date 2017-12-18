@@ -15,10 +15,9 @@ object NGSSparkFileUtils {
       val deletePath = new Path(path)
       if (fs.exists(deletePath)) fs.delete(deletePath, true)
     } catch {
-      case e: IOException => {
+      case e: IOException =>
         Logger.DEBUG("Failed to delete " + path + " from HDFS: " + e.getLocalizedMessage)
         Logger.EXCEPTION(e)
-      }
     } finally {
       fs.close()
     }
@@ -103,11 +102,10 @@ object NGSSparkFileUtils {
         0
       }
     } catch {
-      case e: IOException => {
+      case e: IOException =>
         Logger.DEBUG("Failed to download " + from + " from HDFS: " + e.getLocalizedMessage)
         Logger.EXCEPTION(e)
         -1
-      }
     } finally {
       fs.close()
     }
@@ -152,11 +150,10 @@ object NGSSparkFileUtils {
         }
       }
     } catch {
-      case e: IOException => {
+      case e: IOException =>
         Logger.DEBUG("Failed to download " + from + " from HDFS: " + e.getLocalizedMessage)
         Logger.EXCEPTION(e)
         -1
-      }
     } finally {
       fs.close()
     }
@@ -202,11 +199,10 @@ object NGSSparkFileUtils {
         0
       }
     } catch {
-      case e: IOException => {
+      case e: IOException =>
         Logger.DEBUG("Failed to download " + from + " from HDFS: " + e.getLocalizedMessage)
         Logger.EXCEPTION(e)
         -1
-      }
     } finally {
         fs.close()
     }
@@ -246,11 +242,10 @@ object NGSSparkFileUtils {
         0
       }
     } catch {
-      case e: IOException => {
+      case e: IOException =>
         Logger.DEBUG("Failed to upload " + from + " to HDFS: " + e.getLocalizedMessage)
         Logger.EXCEPTION(e)
         -1
-      }
     } finally {
       fs.close()
     }
@@ -291,11 +286,10 @@ object NGSSparkFileUtils {
           return 0
         }
       } catch {
-        case e: IOException => {
+        case e: IOException =>
           Logger.DEBUG("Failed to upload " + from + " to HDFS: " + e.getLocalizedMessage)
           Logger.EXCEPTION(e)
           return -1
-        }
       } finally {
         fs.close()
       }
@@ -337,11 +331,10 @@ object NGSSparkFileUtils {
         0
       }
     } catch {
-      case e: IOException => {
+      case e: IOException =>
         Logger.DEBUG("Failed to upload " + from + " to HDFS: " + e.getLocalizedMessage)
         Logger.EXCEPTION(e)
         -1
-      }
     } finally {
       fs.close()
     }
