@@ -67,6 +67,7 @@ object NGSSpark {
       throw new IOException("Please specify one or two input directory")
     }
 
+    Logger.INFOTIME("##### BWA start #####")
     val allSamRecordsRDD: RDD[(Int, MySAMRecord)] = inputChunkFileRDD.flatMap(itr => {
       val bwa = new BwaSpark(confBC.value)
       bwa.runBwaDownloadFile(itr._1)
@@ -84,6 +85,7 @@ object NGSSpark {
 
     allSamRecordsRDD.persist(StorageLevel.MEMORY_ONLY_SER)
     val samRecordsSize: Long = allSamRecordsRDD.count()
+    Logger.INFOTIME("##### BWA end #####")
 
     val avgSamRecords: Long = samRecordsSize / (CHR_NUM + 1)
     val chrToNumSamRecs: RDD[(Int, Int)] = allSamRecordsRDD.filter(_._1 != OTHER_CHR_INDEX).map(record => (record._1, 1)).reduceByKey(_ + _)
@@ -102,6 +104,8 @@ object NGSSpark {
 
     val allChrToSamRecordsRDD: RDD[(Int, MySAMRecord)] = allSamRecordsRDD
       .flatMap(itr => balanceLoad(itr, chrInfo, avgSamRecords, CHR_NUM))
+
+    Logger.INFOTIME("##### First half start #####")
 
     val firstHalf: RDD[(Int, String, String)] = allChrToSamRecordsRDD.partitionBy(new HashPartitioner((CHR_NUM + 1) * 2)).mapPartitions(record => {
       if (record.hasNext) {
@@ -122,6 +126,7 @@ object NGSSpark {
 
     firstHalf.persist(StorageLevel.MEMORY_ONLY_SER)
     firstHalf.count()
+    Logger.INFOTIME("##### First half end #####")
 
     /** Download table file **/
     val localTableDir = localTmp + BASE_RECALIBRATOR_TABLE.split("/").last
@@ -138,10 +143,14 @@ object NGSSpark {
     NGSSparkFileUtils.uploadFileToHdfs(oneOutputTableFile, hdfsOneOutputTableFile)
     NGSSparkFileUtils.uploadFileToHdfs(twoOutputTableFile, hdfsTwoOutputTableFile)
 
+    Logger.INFOTIME("##### Second half start #####")
+
     firstHalf.map(itr => {
       val vc = new VariantCalling(confBC.value, itr._1)
       vc.variantCallSecondHalf(itr._2, itr._3, hdfsOneOutputTableFile, hdfsTwoOutputTableFile)
     }).count()
+
+    Logger.INFOTIME("##### Second half end #####")
 
     /*
     runFromMarkDuplicates(sc, confBC, readGroupIdSet)

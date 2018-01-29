@@ -35,7 +35,7 @@ class BwaSpark(settings: Array[(String, String)]) {
 
     NGSSparkFileUtils.downloadFileFromHdfs(fileName, downloadChunkFile)
     val cmd = CommandGenerator.bwaMem(bin, index, downloadChunkFile, null, isPaired = true, useSTDIN = false, BWAThreads, readGroup, useLocalCProgram, customArgs).mkString(" ")
-    Logger.INFOTIME("Run command: " + cmd)
+    //Logger.INFOTIME("Run command: " + cmd)
 
     /*
     val samRecords = cmd.!!
@@ -136,7 +136,7 @@ class BwaSpark(settings: Array[(String, String)]) {
       }
       mCurrentLine = mReader.readLine()
     }
-    Logger.INFOTIME("Sam stream counts " + count + " records")
+    //Logger.INFOTIME("Sam stream counts " + count + " records")
     samRecordList
   }
 
