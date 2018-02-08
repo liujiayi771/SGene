@@ -132,6 +132,7 @@ object NGSSpark {
 
     firstHalf.persist(StorageLevel.MEMORY_ONLY_SER)
     firstHalf.count()
+    allSamRecordsRDD.unpersist()
     Logger.INFOTIME("##### First half end #####")
 
     /** Download table file **/
