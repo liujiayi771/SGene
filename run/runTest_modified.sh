@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+master=mesos://gpu-server7:5050
 CURRENT=$(dirname "$0")
 cd ${CURRENT}
 HOMEDIR=`pwd`/..
@@ -18,33 +18,38 @@ localname=gpu-server5
 
 ${SPARK_HOME}/bin/spark-submit \
         --class edu.hust.elwg.NGSSpark \
-        --master spark://${localname}:7077 \
+        --master ${master} \
         --conf spark.executor.cores=1 \
-        --conf spark.cores.max=9 \
-        --conf spark.driver.memory=1g \
-        --conf spark.executor.memory=54g \
+        --conf spark.cores.max=4 \
+        --conf spark.driver.memory=2g \
+        --conf spark.executor.memory=55g \
+        --conf spark.memory.fraction=0.55 \
         --conf spark.executor.heartbeatInterval=10000000 \
         --conf spark.network.timeout=10000000 \
-        ${HOMEDIR}/ngs-spark-assembly-0.1-SNAPSHOT.jar \
+        --conf spark.executor.extraJavaOptions="-verbose:gc -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -XX:+UseG1GC" \
+        ${HOMEDIR}/target/scala-2.11/ngs-spark-assembly-0.1-SNAPSHOT.jar \
         -B ${HOMEDIR}/bin \
-        --bed ${targetBed} \
         -n 200 \
         -t ${THREAD} \
-        -I /user/spark/data/input/Hidden_Truesures_case_64M \
-        -I /user/spark/data/input/Hidden_Truesures_normal_64M \
+        -I /user/spark/data/input/NGS-Spark-Input/Hidden_Truesures_case_64M \
+        -I /user/spark/data/input/NGS-Spark-Input/Hidden_Truesures_normal_64M \
+        --output hidden_treasure \
         --index /home/spark/GATK/reference_sequence/hs37d5.fasta \
         --read_group "ID:case LB:caseLib SM:case PU:runname PL:illumina" \
+        --read_group "ID:normal LB:normalLib SM:normal PU:runname PL:illumina" \
         --local_tmp ${TMPDIR} \
         --hdfs_tmp /user/spark/sparkgatk_tmp_hidden \
+        --CA bwa=="-P -M" \
         --CA java=="-d64 -server" \
-        --CA java_markduplicates=="-Xms8g -Xmx16g" \
-        --CA java_realignertargetcreator=="-Xms32g -Xmx50g -Djava.library.path=$lib_path" \
-        --CA gatk_realignertargetcreator=="-L $targetBed -known $mills_1kg -known $dbsnp_del100 -nt $THREAD -allowPotentiallyMisencodedQuals -rf NotPrimaryAlignment -dt NONE" \
-        --CA java_indelrealigner=="-Xms32g -Xmx50g -Djava.library.path=$lib_path" \
+        --CA java_markduplicates=="-Xms20g -Xmx20g" \
+        --CA picard_markduplicates=="ASO=coordinate OPTICAL_DUPLICATE_PIXEL_DISTANCE=100 VALIDATION_STRINGENCY=LENIENT REMOVE_DUPLICATES=true" \
+        --CA java_realignertargetcreator=="-Xms20g -Xmx20g -Djava.library.path=$lib_path" \
+        --CA gatk_realignertargetcreator=="-known $mills_1kg -known $dbsnp_del100 -nt $THREAD -allowPotentiallyMisencodedQuals -rf NotPrimaryAlignment -dt NONE" \
+        --CA java_indelrealigner=="-Xms20g -Xmx20g -Djava.library.path=$lib_path" \
         --CA gatk_indelrealigner=="-known $mills_1kg -known $dbsnp_del100 -allowPotentiallyMisencodedQuals -rf NotPrimaryAlignment -nThreads $THREAD --filter_bases_not_stored -dt NONE --maxReadsForRealignment 10000000" \
-        --CA java_baserecalibrator=="-Xms30g -Xmx30g -Djava.library.path=$lib_path" \
-        --CA gatk_baserecalibrator=="-L $targetBed -knownSites $mills_1kg -knownSites $dbsnp_del100 -knownSites $cosmic -nct $THREAD -allowPotentiallyMisencodedQuals -rbs 3000" \
-        --CA java_printreads=="-Xms30g -Xmx30g -Djava.library.path=$lib_path" \
+        --CA java_baserecalibrator=="-Xms20g -Xmx20g -Djava.library.path=$lib_path" \
+        --CA gatk_baserecalibrator=="-knownSites $mills_1kg -knownSites $dbsnp_del100 -knownSites $cosmic -nct $THREAD -allowPotentiallyMisencodedQuals -rbs 3000" \
+        --CA java_printreads=="-Xms20g -Xmx20g -Djava.library.path=$lib_path" \
         --CA gatk_printreads=="-nct $THREAD -allowPotentiallyMisencodedQuals -rbs 3000" \
-        --CA java_mutect2=="-Xms30g -Xmx30g -Djava.library.path=$lib_path" \
+        --CA java_mutect2=="-Xms20g -Xmx20g -Djava.library.path=$lib_path" \
         --CA gatk_mutect2=="--dbsnp $dbsnp_del100 --cosmic $cosmic -contamination 0 --max_alt_alleles_in_normal_count 3 --max_alt_alleles_in_normal_qscore_sum 40 --max_alt_allele_in_normal_fraction 0.02 -dt NONE -ntLib $THREAD"

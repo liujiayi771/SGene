@@ -1,0 +1,207 @@
+10:26:00.623 INFO  s.m.l.Main$ - Starting server in /Users/joey/Documents/projects/ideaProjects/NGS-Spark
+10:26:00.633 INFO  s.m.l.Main$ - Classpath: /Users/joey/.atom/packages/ide-scala/coursier
+Downloading https://repo1.maven.org/maven2/com/geirsson/scalafmt-cli_2.12/1.3.0/scalafmt-cli_2.12-1.3.0.pom.sha1
+Downloading https://repo1.maven.org/maven2/com/geirsson/scalafmt-cli_2.12/1.3.0/scalafmt-cli_2.12-1.3.0.pom
+Downloaded https://repo1.maven.org/maven2/com/geirsson/scalafmt-cli_2.12/1.3.0/scalafmt-cli_2.12-1.3.0.pom.sha1
+Downloaded https://repo1.maven.org/maven2/com/geirsson/scalafmt-cli_2.12/1.3.0/scalafmt-cli_2.12-1.3.0.pom
+Downloading https://repo1.maven.org/maven2/com/geirsson/scalafmt-cli_2.12/1.3.0/
+Downloaded https://repo1.maven.org/maven2/com/geirsson/scalafmt-cli_2.12/1.3.0/
+Downloading https://repo1.maven.org/maven2/com/github/scopt/scopt_2.12/3.5.0/scopt_2.12-3.5.0.pom
+Downloading https://repo1.maven.org/maven2/com/geirsson/scalafmt-core_2.12/1.3.0/scalafmt-core_2.12-1.3.0.pom
+Downloading https://repo1.maven.org/maven2/com/github/scopt/scopt_2.12/3.5.0/scopt_2.12-3.5.0.pom.sha1
+Downloading https://repo1.maven.org/maven2/com/geirsson/scalafmt-core_2.12/1.3.0/scalafmt-core_2.12-1.3.0.pom.sha1
+Downloading https://repo1.maven.org/maven2/org/scalameta/scalameta_2.12/1.7.0/scalameta_2.12-1.7.0.pom
+Downloading https://repo1.maven.org/maven2/org/scalameta/scalameta_2.12/1.7.0/scalameta_2.12-1.7.0.pom.sha1
+Downloaded https://repo1.maven.org/maven2/com/github/scopt/scopt_2.12/3.5.0/scopt_2.12-3.5.0.pom
+Downloading https://repo1.maven.org/maven2/org/scala-lang/scala-library/2.12.2/scala-library-2.12.2.pom
+Downloaded https://repo1.maven.org/maven2/org/scalameta/scalameta_2.12/1.7.0/scalameta_2.12-1.7.0.pom
+Downloading https://repo1.maven.org/maven2/org/scala-lang/scala-library/2.12.2/scala-library-2.12.2.pom.sha1
+Downloaded https://repo1.maven.org/maven2/org/scala-lang/scala-library/2.12.2/scala-library-2.12.2.pom
+Downloaded https://repo1.maven.org/maven2/org/scala-lang/scala-library/2.12.2/scala-library-2.12.2.pom.sha1
+Downloading https://repo1.maven.org/maven2/org/scala-lang/scala-library/2.12.2/
+Downloaded https://repo1.maven.org/maven2/org/scala-lang/scala-library/2.12.2/
+Downloaded https://repo1.maven.org/maven2/org/scalameta/scalameta_2.12/1.7.0/scalameta_2.12-1.7.0.pom.sha1
+Downloaded https://repo1.maven.org/maven2/com/geirsson/scalafmt-core_2.12/1.3.0/scalafmt-core_2.12-1.3.0.pom
+Downloading https://repo1.maven.org/maven2/org/scalameta/scalameta_2.12/1.7.0/
+Downloaded https://repo1.maven.org/maven2/com/github/scopt/scopt_2.12/3.5.0/scopt_2.12-3.5.0.pom.sha1
+Downloaded https://repo1.maven.org/maven2/com/geirsson/scalafmt-core_2.12/1.3.0/scalafmt-core_2.12-1.3.0.pom.sha1
+Downloading https://repo1.maven.org/maven2/com/github/scopt/scopt_2.12/3.5.0/
+Downloading https://repo1.maven.org/maven2/com/geirsson/scalafmt-core_2.12/1.3.0/
+Downloaded https://repo1.maven.org/maven2/com/geirsson/scalafmt-core_2.12/1.3.0/
+Downloaded https://repo1.maven.org/maven2/com/github/scopt/scopt_2.12/3.5.0/
+Downloaded https://repo1.maven.org/maven2/org/scalameta/scalameta_2.12/1.7.0/
+Downloading https://repo1.maven.org/maven2/org/scalameta/common_2.12/1.7.0/common_2.12-1.7.0.pom
+Downloading https://repo1.maven.org/maven2/org/scalameta/trees_2.12/1.7.0/trees_2.12-1.7.0.pom
+Downloading https://repo1.maven.org/maven2/org/scalameta/common_2.12/1.7.0/common_2.12-1.7.0.pom.sha1
+Downloading https://repo1.maven.org/maven2/org/scalameta/trees_2.12/1.7.0/trees_2.12-1.7.0.pom.sha1
+Downloading https://repo1.maven.org/maven2/com/geirsson/metaconfig-core_2.12/0.4.0/metaconfig-core_2.12-0.4.0.pom
+Downloading https://repo1.maven.org/maven2/com/geirsson/metaconfig-core_2.12/0.4.0/metaconfig-core_2.12-0.4.0.pom.sha1
+Downloaded https://repo1.maven.org/maven2/org/scalameta/trees_2.12/1.7.0/trees_2.12-1.7.0.pom.sha1
+Downloading https://repo1.maven.org/maven2/com/geirsson/metaconfig-typesafe-config_2.12/0.4.0/metaconfig-typesafe-config_2.12-0.4.0.pom
+Downloaded https://repo1.maven.org/maven2/org/scalameta/trees_2.12/1.7.0/trees_2.12-1.7.0.pom
+Downloading https://repo1.maven.org/maven2/com/geirsson/metaconfig-typesafe-config_2.12/0.4.0/metaconfig-typesafe-config_2.12-0.4.0.pom.sha1
+Downloaded https://repo1.maven.org/maven2/com/geirsson/metaconfig-core_2.12/0.4.0/metaconfig-core_2.12-0.4.0.pom
+Downloading https://repo1.maven.org/maven2/org/scalameta/tokenizers_2.12/1.7.0/tokenizers_2.12-1.7.0.pom
+Downloaded https://repo1.maven.org/maven2/org/scalameta/common_2.12/1.7.0/common_2.12-1.7.0.pom.sha1
+Downloading https://repo1.maven.org/maven2/org/scalameta/tokenizers_2.12/1.7.0/tokenizers_2.12-1.7.0.pom.sha1
+Downloaded https://repo1.maven.org/maven2/org/scalameta/common_2.12/1.7.0/common_2.12-1.7.0.pom
+Downloading https://repo1.maven.org/maven2/org/scalameta/semantic_2.12/1.7.0/semantic_2.12-1.7.0.pom
+Downloaded https://repo1.maven.org/maven2/com/geirsson/metaconfig-typesafe-config_2.12/0.4.0/metaconfig-typesafe-config_2.12-0.4.0.pom.sha1
+Downloading https://repo1.maven.org/maven2/org/scalameta/semantic_2.12/1.7.0/semantic_2.12-1.7.0.pom.sha1
+Downloaded https://repo1.maven.org/maven2/com/geirsson/metaconfig-typesafe-config_2.12/0.4.0/metaconfig-typesafe-config_2.12-0.4.0.pom
+Downloading https://repo1.maven.org/maven2/org/scalameta/parsers_2.12/1.7.0/parsers_2.12-1.7.0.pom
+Downloaded https://repo1.maven.org/maven2/org/scalameta/tokenizers_2.12/1.7.0/tokenizers_2.12-1.7.0.pom.sha1
+Downloading https://repo1.maven.org/maven2/org/scalameta/parsers_2.12/1.7.0/parsers_2.12-1.7.0.pom.sha1
+Downloaded https://repo1.maven.org/maven2/org/scalameta/tokenizers_2.12/1.7.0/tokenizers_2.12-1.7.0.pom
+Downloading https://repo1.maven.org/maven2/org/scalameta/dialects_2.12/1.7.0/dialects_2.12-1.7.0.pom.sha1
+Downloaded https://repo1.maven.org/maven2/org/scalameta/semantic_2.12/1.7.0/semantic_2.12-1.7.0.pom
+Downloading https://repo1.maven.org/maven2/org/scalameta/dialects_2.12/1.7.0/dialects_2.12-1.7.0.pom
+Downloaded https://repo1.maven.org/maven2/com/geirsson/metaconfig-core_2.12/0.4.0/metaconfig-core_2.12-0.4.0.pom.sha1
+Downloading https://repo1.maven.org/maven2/org/scalameta/quasiquotes_2.12/1.7.0/quasiquotes_2.12-1.7.0.pom
+Downloaded https://repo1.maven.org/maven2/org/scalameta/semantic_2.12/1.7.0/semantic_2.12-1.7.0.pom.sha1
+Downloading https://repo1.maven.org/maven2/org/scalameta/quasiquotes_2.12/1.7.0/quasiquotes_2.12-1.7.0.pom.sha1
+Downloaded https://repo1.maven.org/maven2/org/scalameta/parsers_2.12/1.7.0/parsers_2.12-1.7.0.pom.sha1
+Downloading https://repo1.maven.org/maven2/org/scalameta/transversers_2.12/1.7.0/transversers_2.12-1.7.0.pom
+Downloaded https://repo1.maven.org/maven2/org/scalameta/dialects_2.12/1.7.0/dialects_2.12-1.7.0.pom.sha1
+Downloading https://repo1.maven.org/maven2/org/scalameta/transversers_2.12/1.7.0/transversers_2.12-1.7.0.pom.sha1
+Downloaded https://repo1.maven.org/maven2/org/scalameta/dialects_2.12/1.7.0/dialects_2.12-1.7.0.pom
+Downloading https://repo1.maven.org/maven2/org/scalameta/inline_2.12/1.7.0/inline_2.12-1.7.0.pom
+Downloaded https://repo1.maven.org/maven2/org/scalameta/parsers_2.12/1.7.0/parsers_2.12-1.7.0.pom
+Downloading https://repo1.maven.org/maven2/org/scalameta/inline_2.12/1.7.0/inline_2.12-1.7.0.pom.sha1
+Downloaded https://repo1.maven.org/maven2/org/scalameta/quasiquotes_2.12/1.7.0/quasiquotes_2.12-1.7.0.pom
+Downloaded https://repo1.maven.org/maven2/org/scalameta/quasiquotes_2.12/1.7.0/quasiquotes_2.12-1.7.0.pom.sha1
+Downloading https://repo1.maven.org/maven2/org/scalameta/common_2.12/1.7.0/
+Downloading https://repo1.maven.org/maven2/org/scalameta/trees_2.12/1.7.0/
+Downloaded https://repo1.maven.org/maven2/org/scalameta/transversers_2.12/1.7.0/transversers_2.12-1.7.0.pom
+Downloading https://repo1.maven.org/maven2/com/geirsson/metaconfig-typesafe-config_2.12/0.4.0/
+Downloaded https://repo1.maven.org/maven2/org/scalameta/transversers_2.12/1.7.0/transversers_2.12-1.7.0.pom.sha1
+Downloading https://repo1.maven.org/maven2/org/scalameta/tokenizers_2.12/1.7.0/
+Downloaded https://repo1.maven.org/maven2/org/scalameta/inline_2.12/1.7.0/inline_2.12-1.7.0.pom
+Downloading https://repo1.maven.org/maven2/org/scalameta/semantic_2.12/1.7.0/
+Downloaded https://repo1.maven.org/maven2/org/scalameta/inline_2.12/1.7.0/inline_2.12-1.7.0.pom.sha1
+Downloading https://repo1.maven.org/maven2/com/geirsson/metaconfig-core_2.12/0.4.0/
+Downloaded https://repo1.maven.org/maven2/org/scalameta/common_2.12/1.7.0/
+Downloaded https://repo1.maven.org/maven2/org/scalameta/trees_2.12/1.7.0/
+Downloading https://repo1.maven.org/maven2/org/scalameta/dialects_2.12/1.7.0/
+Downloaded https://repo1.maven.org/maven2/org/scalameta/tokenizers_2.12/1.7.0/
+Downloaded https://repo1.maven.org/maven2/com/geirsson/metaconfig-typesafe-config_2.12/0.4.0/
+Downloading https://repo1.maven.org/maven2/org/scalameta/parsers_2.12/1.7.0/
+Downloaded https://repo1.maven.org/maven2/org/scalameta/semantic_2.12/1.7.0/
+Downloading https://repo1.maven.org/maven2/org/scalameta/quasiquotes_2.12/1.7.0/
+Downloaded https://repo1.maven.org/maven2/com/geirsson/metaconfig-core_2.12/0.4.0/
+Downloading https://repo1.maven.org/maven2/org/scalameta/transversers_2.12/1.7.0/
+Downloading https://repo1.maven.org/maven2/org/scalameta/inline_2.12/1.7.0/
+Downloaded https://repo1.maven.org/maven2/org/scalameta/dialects_2.12/1.7.0/
+Downloaded https://repo1.maven.org/maven2/org/scalameta/parsers_2.12/1.7.0/
+Downloaded https://repo1.maven.org/maven2/org/scalameta/quasiquotes_2.12/1.7.0/
+Downloaded https://repo1.maven.org/maven2/org/scalameta/transversers_2.12/1.7.0/
+Downloaded https://repo1.maven.org/maven2/org/scalameta/inline_2.12/1.7.0/
+Downloading https://repo1.maven.org/maven2/com/lihaoyi/sourcecode_2.12/0.1.3/sourcecode_2.12-0.1.3.pom
+Downloading https://repo1.maven.org/maven2/com/lihaoyi/sourcecode_2.12/0.1.3/sourcecode_2.12-0.1.3.pom.sha1
+Downloading https://repo1.maven.org/maven2/com/lihaoyi/scalaparse_2.12/0.4.2/scalaparse_2.12-0.4.2.pom
+Downloading https://repo1.maven.org/maven2/com/lihaoyi/scalaparse_2.12/0.4.2/scalaparse_2.12-0.4.2.pom.sha1
+Downloading https://repo1.maven.org/maven2/org/scalameta/inputs_2.12/1.7.0/inputs_2.12-1.7.0.pom
+Downloading https://repo1.maven.org/maven2/org/scalameta/inputs_2.12/1.7.0/inputs_2.12-1.7.0.pom.sha1
+Downloaded https://repo1.maven.org/maven2/com/lihaoyi/sourcecode_2.12/0.1.3/sourcecode_2.12-0.1.3.pom
+Downloaded https://repo1.maven.org/maven2/org/scalameta/inputs_2.12/1.7.0/inputs_2.12-1.7.0.pom.sha1
+Downloading https://repo1.maven.org/maven2/org/scalameta/tokens_2.12/1.7.0/tokens_2.12-1.7.0.pom
+Downloaded https://repo1.maven.org/maven2/com/lihaoyi/sourcecode_2.12/0.1.3/sourcecode_2.12-0.1.3.pom.sha1
+Downloading https://repo1.maven.org/maven2/org/scalameta/tokens_2.12/1.7.0/tokens_2.12-1.7.0.pom.sha1
+Downloading https://repo1.maven.org/maven2/com/trueaccord/scalapb/scalapb-runtime_2.12/0.6.0-pre2/scalapb-runtime_2.12-0.6.0-pre2.pom
+Downloaded https://repo1.maven.org/maven2/org/scalameta/inputs_2.12/1.7.0/inputs_2.12-1.7.0.pom
+Downloading https://repo1.maven.org/maven2/com/trueaccord/scalapb/scalapb-runtime_2.12/0.6.0-pre2/scalapb-runtime_2.12-0.6.0-pre2.pom.sha1
+Downloaded https://repo1.maven.org/maven2/com/lihaoyi/scalaparse_2.12/0.4.2/scalaparse_2.12-0.4.2.pom
+Downloading https://repo1.maven.org/maven2/com/lihaoyi/sourcecode_2.12/0.1.3/
+Downloaded https://repo1.maven.org/maven2/org/scalameta/tokens_2.12/1.7.0/tokens_2.12-1.7.0.pom
+Downloading https://repo1.maven.org/maven2/org/scalameta/inputs_2.12/1.7.0/
+Downloaded https://repo1.maven.org/maven2/com/trueaccord/scalapb/scalapb-runtime_2.12/0.6.0-pre2/scalapb-runtime_2.12-0.6.0-pre2.pom.sha1
+Downloaded https://repo1.maven.org/maven2/com/trueaccord/scalapb/scalapb-runtime_2.12/0.6.0-pre2/scalapb-runtime_2.12-0.6.0-pre2.pom
+Downloaded https://repo1.maven.org/maven2/org/scalameta/tokens_2.12/1.7.0/tokens_2.12-1.7.0.pom.sha1
+Downloaded https://repo1.maven.org/maven2/com/lihaoyi/sourcecode_2.12/0.1.3/
+Downloading https://repo1.maven.org/maven2/com/trueaccord/scalapb/scalapb-runtime_2.12/0.6.0-pre2/
+Downloading https://repo1.maven.org/maven2/org/scalameta/tokens_2.12/1.7.0/
+Downloaded https://repo1.maven.org/maven2/com/lihaoyi/scalaparse_2.12/0.4.2/scalaparse_2.12-0.4.2.pom.sha1
+Downloading https://repo1.maven.org/maven2/com/lihaoyi/scalaparse_2.12/0.4.2/
+Downloaded https://repo1.maven.org/maven2/org/scalameta/tokens_2.12/1.7.0/
+Downloaded https://repo1.maven.org/maven2/org/scalameta/inputs_2.12/1.7.0/
+Downloaded https://repo1.maven.org/maven2/com/trueaccord/scalapb/scalapb-runtime_2.12/0.6.0-pre2/
+Downloaded https://repo1.maven.org/maven2/com/lihaoyi/scalaparse_2.12/0.4.2/
+Downloading https://repo1.maven.org/maven2/com/google/protobuf/protobuf-java/3.2.0/protobuf-java-3.2.0.pom
+Downloading https://repo1.maven.org/maven2/com/lihaoyi/fastparse_2.12/0.4.2/fastparse_2.12-0.4.2.pom
+Downloading https://repo1.maven.org/maven2/com/lihaoyi/fastparse_2.12/0.4.2/fastparse_2.12-0.4.2.pom.sha1
+Downloading https://repo1.maven.org/maven2/com/trueaccord/lenses/lenses_2.12/0.4.10/lenses_2.12-0.4.10.pom
+Downloading https://repo1.maven.org/maven2/com/google/protobuf/protobuf-java/3.2.0/protobuf-java-3.2.0.pom.sha1
+Downloading https://repo1.maven.org/maven2/com/trueaccord/lenses/lenses_2.12/0.4.10/lenses_2.12-0.4.10.pom.sha1
+Downloaded https://repo1.maven.org/maven2/com/lihaoyi/fastparse_2.12/0.4.2/fastparse_2.12-0.4.2.pom
+Downloading https://repo1.maven.org/maven2/org/scalameta/io_2.12/1.7.0/io_2.12-1.7.0.pom
+Downloaded https://repo1.maven.org/maven2/com/trueaccord/lenses/lenses_2.12/0.4.10/lenses_2.12-0.4.10.pom.sha1
+Downloading https://repo1.maven.org/maven2/org/scalameta/io_2.12/1.7.0/io_2.12-1.7.0.pom.sha1
+Downloaded https://repo1.maven.org/maven2/com/trueaccord/lenses/lenses_2.12/0.4.10/lenses_2.12-0.4.10.pom
+Downloading https://repo1.maven.org/maven2/com/trueaccord/lenses/lenses_2.12/0.4.10/
+Downloaded https://repo1.maven.org/maven2/com/google/protobuf/protobuf-java/3.2.0/protobuf-java-3.2.0.pom.sha1
+Downloaded https://repo1.maven.org/maven2/com/google/protobuf/protobuf-java/3.2.0/protobuf-java-3.2.0.pom
+Downloading https://repo1.maven.org/maven2/com/google/protobuf/protobuf-java/3.2.0/
+Downloaded https://repo1.maven.org/maven2/org/scalameta/io_2.12/1.7.0/io_2.12-1.7.0.pom
+Downloaded https://repo1.maven.org/maven2/com/trueaccord/lenses/lenses_2.12/0.4.10/
+Downloaded https://repo1.maven.org/maven2/org/scalameta/io_2.12/1.7.0/io_2.12-1.7.0.pom.sha1
+Downloaded https://repo1.maven.org/maven2/com/google/protobuf/protobuf-java/3.2.0/
+Downloading https://repo1.maven.org/maven2/org/scalameta/io_2.12/1.7.0/
+Downloaded https://repo1.maven.org/maven2/com/lihaoyi/fastparse_2.12/0.4.2/fastparse_2.12-0.4.2.pom.sha1
+Downloading https://repo1.maven.org/maven2/com/lihaoyi/fastparse_2.12/0.4.2/
+Downloaded https://repo1.maven.org/maven2/org/scalameta/io_2.12/1.7.0/
+Downloaded https://repo1.maven.org/maven2/com/lihaoyi/fastparse_2.12/0.4.2/
+Downloading https://repo1.maven.org/maven2/com/google/protobuf/protobuf-parent/3.2.0/protobuf-parent-3.2.0.pom
+Downloading https://repo1.maven.org/maven2/com/google/protobuf/protobuf-parent/3.2.0/protobuf-parent-3.2.0.pom.sha1
+Downloaded https://repo1.maven.org/maven2/com/google/protobuf/protobuf-parent/3.2.0/protobuf-parent-3.2.0.pom.sha1
+Downloaded https://repo1.maven.org/maven2/com/google/protobuf/protobuf-parent/3.2.0/protobuf-parent-3.2.0.pom
+Downloading https://repo1.maven.org/maven2/com/google/protobuf/protobuf-parent/3.2.0/
+Downloaded https://repo1.maven.org/maven2/com/google/protobuf/protobuf-parent/3.2.0/
+Downloading https://repo1.maven.org/maven2/com/lihaoyi/fastparse-utils_2.12/0.4.2/fastparse-utils_2.12-0.4.2.pom
+Downloading https://repo1.maven.org/maven2/com/lihaoyi/fastparse-utils_2.12/0.4.2/fastparse-utils_2.12-0.4.2.pom.sha1
+Downloaded https://repo1.maven.org/maven2/com/lihaoyi/fastparse-utils_2.12/0.4.2/fastparse-utils_2.12-0.4.2.pom
+Downloaded https://repo1.maven.org/maven2/com/lihaoyi/fastparse-utils_2.12/0.4.2/fastparse-utils_2.12-0.4.2.pom.sha1
+Downloading https://repo1.maven.org/maven2/com/lihaoyi/fastparse-utils_2.12/0.4.2/
+Downloaded https://repo1.maven.org/maven2/com/lihaoyi/fastparse-utils_2.12/0.4.2/
+10:26:10.740 INFO  s.m.l.Formatter$ - Classloading scalafmt with 28 downloaded jars
+10:26:11.516 INFO  s.m.l.ScalametaLanguageServer - Initialized with /Users/joey/Documents/projects/ideaProjects/NGS-Spark, InitializeParams(8855,/Users/joey/Documents/projects/ideaProjects/NGS-Spark/,ClientCapabilities())
+10:26:12.741 ERROR l.c.LanguageServer$$anon$1 - Invalid Notification: List((,List(JsonValidationError(List(notification parameters must be given),WrappedArray())))) - Message: JsonRpcNotificationMessage(initialized,NoParams)
+10:26:12.810 INFO  s.m.l.p.DocumentHighlightProvider$ - Document highlight in Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala)
+10:26:12.811 INFO  s.m.l.s.InMemorySymbolIndex - resolveName at Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala):12:45
+10:26:12.818 INFO  s.m.l.s.InMemorySymbolIndex - resolveName at Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala):12:32
+10:26:12.884 INFO  s.m.l.s.InMemorySymbolIndex - resolveName at Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala):15:42
+10:26:12.885 INFO  s.m.l.p.DocumentHighlightProvider$ - Document highlight in Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala)
+10:26:12.886 INFO  s.m.l.s.InMemorySymbolIndex - resolveName at Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala):13:28
+10:26:12.885 INFO  s.m.l.p.DocumentHighlightProvider$ - Document highlight in Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala)
+10:26:12.887 INFO  s.m.l.s.InMemorySymbolIndex - resolveName at Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala):13:28
+10:26:12.887 INFO  s.m.l.s.InMemorySymbolIndex - resolveName at Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala):15:39
+10:26:12.886 INFO  s.m.l.s.InMemorySymbolIndex - resolveName at Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala):16:39
+10:26:12.888 INFO  s.m.l.p.DocumentHighlightProvider$ - Document highlight in Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala)
+10:26:12.889 INFO  s.m.l.s.InMemorySymbolIndex - resolveName at Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala):18:32
+10:26:16.725 INFO  s.m.l.s.InMemorySymbolIndex - resolveName at Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala):74:39
+10:26:17.274 INFO  s.m.l.s.InMemorySymbolIndex - resolveName at Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala):74:33
+10:26:17.497 INFO  s.m.l.s.InMemorySymbolIndex - resolveName at Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala):74:33
+10:26:23.298 INFO  s.m.l.p.DocumentHighlightProvider$ - Document highlight in Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala)
+10:26:23.298 INFO  s.m.l.s.InMemorySymbolIndex - resolveName at Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala):74:45
+10:26:30.925 INFO  s.m.l.p.DocumentHighlightProvider$ - Document highlight in Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala)
+10:26:30.926 INFO  s.m.l.s.InMemorySymbolIndex - resolveName at Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala):69:0
+10:26:39.305 INFO  s.m.l.p.DocumentHighlightProvider$ - Document highlight in Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala)
+10:26:39.305 INFO  s.m.l.s.InMemorySymbolIndex - resolveName at Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala):67:4
+10:27:07.089 INFO  s.m.l.ScalametaLanguageServer - completion
+10:27:07.314 INFO  s.m.l.ScalametaLanguageServer - completion
+10:27:11.800 INFO  s.m.l.p.DocumentHighlightProvider$ - Document highlight in Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala)
+10:27:11.801 INFO  s.m.l.s.InMemorySymbolIndex - resolveName at Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala):67:4
+10:27:14.170 INFO  s.m.l.p.DocumentHighlightProvider$ - Document highlight in Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala)
+10:27:14.170 INFO  s.m.l.s.InMemorySymbolIndex - resolveName at Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala):67:24
+10:27:14.338 INFO  s.m.l.s.InMemorySymbolIndex - resolveName at Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala):67:13
+10:27:17.705 INFO  s.m.l.p.DocumentHighlightProvider$ - Document highlight in Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala)
+10:27:17.705 INFO  s.m.l.s.InMemorySymbolIndex - resolveName at Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala):68:24
+10:27:18.276 INFO  s.m.l.p.DocumentHighlightProvider$ - Document highlight in Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala)
+10:27:18.277 INFO  s.m.l.s.InMemorySymbolIndex - resolveName at Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala):100:45
+10:27:19.176 INFO  s.m.l.p.DocumentHighlightProvider$ - Document highlight in Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala)
+10:27:19.177 INFO  s.m.l.s.InMemorySymbolIndex - resolveName at Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala):101:45
+10:27:21.483 INFO  s.m.l.p.DocumentHighlightProvider$ - Document highlight in Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala)
+10:27:21.483 INFO  s.m.l.s.InMemorySymbolIndex - resolveName at Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala):349:26
+10:27:37.282 INFO  s.m.l.p.DocumentHighlightProvider$ - Document highlight in Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala)
+10:27:37.282 INFO  s.m.l.s.InMemorySymbolIndex - resolveName at Uri(file:///Users/joey/Documents/projects/ideaProjects/NGS-Spark/src/main/scala/edu/hust/elwg/VariantCalling.scala):349:65
+10:27:46.135 INFO  s.m.l.ScalametaLanguageServer - Shutting down...
+10:27:46.174 DEBUG s.m.l.ScalametaLanguageServer - exit

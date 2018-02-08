@@ -3,7 +3,8 @@ package edu.hust.elwg
 
 import java.io._
 
-import edu.hust.elwg.tools.{ChromosomeTools, MySAMRecord, PreprocessTools}
+import com.google.common.collect.Iterators
+import edu.hust.elwg.tools._
 import edu.hust.elwg.utils._
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
@@ -22,10 +23,6 @@ object NGSSpark {
     conf.registerKryoClasses(Array(classOf[MySAMRecord]))
     val sc: SparkContext = new SparkContext(conf)
     CommandLine.parseParam(args, conf)
-    val CHR_NUM = 24
-    val OTHER_CHR_INDEX = 49
-    NGSSparkConf.setChromosomeNum(conf, CHR_NUM)
-    NGSSparkConf.setOtherChrIndex(conf, OTHER_CHR_INDEX)
 
     val partitionNum = NGSSparkConf.getPartitionNum(conf)
     val inputDirs = NGSSparkConf.getInput(conf)
@@ -68,7 +65,7 @@ object NGSSpark {
     }
 
     Logger.INFOTIME("##### BWA start #####")
-    val allSamRecordsRDD: RDD[(Int, MySAMRecord)] = inputChunkFileRDD.flatMap(itr => {
+    val allSamRecordsRDD: RDD[MySAMRecord] = inputChunkFileRDD.flatMap(itr => {
       val bwa = new BwaSpark(confBC.value)
       bwa.runBwaDownloadFile(itr._1)
     })
@@ -82,19 +79,22 @@ object NGSSpark {
       v.readStream(1, itr).toIterator
     })
     */
-
     allSamRecordsRDD.persist(StorageLevel.MEMORY_ONLY_SER)
     val samRecordsSize: Long = allSamRecordsRDD.count()
     Logger.INFOTIME("##### BWA end #####")
 
-    val avgSamRecords: Long = samRecordsSize / (CHR_NUM + 1)
-    val chrToNumSamRecs: RDD[(Int, Int)] = allSamRecordsRDD.filter(_._1 != OTHER_CHR_INDEX).map(record => (record._1, 1)).reduceByKey(_ + _)
+    val avgSamRecords: Long = samRecordsSize / (ProgramVariable.CHR_NUM + 1)
+    val chrToNumSamRecs: RDD[(Int, Int)] = allSamRecordsRDD.filter(_.regionId != ProgramVariable.OTHER_CHR_INDEX).map(record => (record.regionId, 1)).reduceByKey(_ + _)
     val chrInfo: Map[Int, (Int, Int)] = chrToNumSamRecs.map(record => {
       val conf: SparkConf = new SparkConf()
       conf.setAll(confBC.value)
       (record._1, (record._2, ChromosomeTools(NGSSparkConf.getSequenceDictionary(conf)).chrLen(record._1)))
     }).collect.toMap
 
+    println("avg: " + avgSamRecords)
+    for (x <- chrInfo) {
+      println("chr: " + x._1 + "  readsNum: " + x._2._1 + "  chrLen: " + x._2._2)
+    }
     /*
     val allChrToSamRecordsRDD: RDD[(Int, Iterable[MySAMRecord])] = allSamRecordsRDD
       .flatMap(itr => balanceLoad(itr, chrInfo, avgSamRecords, CHR_NUM))
@@ -102,20 +102,26 @@ object NGSSpark {
       .filter(itr => NGSSparkConf.getTargetBedChr(conf).contains(itr._1))
     */
 
-    val allChrToSamRecordsRDD: RDD[(Int, MySAMRecord)] = allSamRecordsRDD
-      .flatMap(itr => balanceLoad(itr, chrInfo, avgSamRecords, CHR_NUM))
+    val allChrToSamRecordsRDD: RDD[MySAMRecord] = allSamRecordsRDD
+      .flatMap(itr => balanceLoad(itr, chrInfo, avgSamRecords, ProgramVariable.CHR_NUM))
 
+//    allChrToSamRecordsRDD.saveAsObjectFile("alluxio://gpu-server5:19998/allChrToSamRecordsRDD")
     Logger.INFOTIME("##### First half start #####")
 
-    val firstHalf: RDD[(Int, String, String)] = allChrToSamRecordsRDD.partitionBy(new HashPartitioner((CHR_NUM + 1) * 2)).mapPartitions(record => {
-      if (record.hasNext) {
-        val regionId = record.next()._1
-        val vc = new VariantCalling(confBC.value, regionId)
-        List(vc.variantCallFirstHalf(record.map(x => x._2).toIterable)).toIterator
-      } else {
-        Iterator.empty
-      }
-    })
+    val firstHalf: RDD[(Int, String, String)] = allChrToSamRecordsRDD/*sc.objectFile[MySAMRecord]("alluxio://gpu-server5:19998/allChrToSamRecordsRDD")*/
+      .map(record => (record, None))
+      .repartitionAndSortWithinPartitions(new MySAMRecordPartitioner((ProgramVariable.CHR_NUM + 1) * 2))
+      .mapPartitions(
+        recordItr => {
+          if (recordItr.hasNext) {
+            val regionId = recordItr.next._1.regionId
+            val vc = new VariantCalling(confBC.value, regionId)
+            List(vc.variantCallFirstHalf(recordItr.map(_._1).toIterable)).toIterator
+          } else {
+            Iterator.empty
+          }
+        }
+      )
 
     /*
     val firstHalf: RDD[(Int, String, String)] = allChrToSamRecordsRDD.sortBy(itr => itr._2.size, ascending = false).map(itr => {
@@ -195,7 +201,7 @@ object NGSSpark {
 
     val data = sc.wholeTextFiles("/user/spark/sparkgatk_L001/print_reads_bam")
       .map(itr => (itr._1.split("/").last.split("-")(1).toInt, itr._1))
-    data.groupByKey(NGSSparkConf.getChromosomeNum(conf)).map(itr => {
+    data.groupByKey(ProgramVariable.CHR_NUM).map(itr => {
       var bamFileOne = ""
       var bamFileTwo = ""
       for (bam <- itr._2) {
@@ -221,7 +227,7 @@ object NGSSpark {
 
     val data = sc.wholeTextFiles("/user/spark/sparkgatk_L001/mark_duplicates_bam")
       .map(itr => (itr._1.split("/").last.split("-")(1).toInt, itr._1))
-    val firstHalf = data.groupByKey(NGSSparkConf.getChromosomeNum(conf)).map(itr => {
+    val firstHalf = data.groupByKey(ProgramVariable.CHR_NUM).map(itr => {
       var bamFileOne = ""
       var bamFileTwo = ""
       for (bam <- itr._2) {
@@ -269,7 +275,7 @@ object NGSSpark {
 
     val data = sc.wholeTextFiles("/user/spark/sparkgatk_L001/indel_realignment_bam")
       .map(itr => (itr._1.split("/").last.split("-")(1).toInt, itr._1))
-    val firstHalf = data.groupByKey(NGSSparkConf.getChromosomeNum(conf)).map(itr => {
+    val firstHalf = data.groupByKey(ProgramVariable.CHR_NUM).map(itr => {
       var bamFileOne = ""
       var bamFileTwo = ""
       for (bam <- itr._2) {
@@ -317,7 +323,7 @@ object NGSSpark {
 
     val data = sc.wholeTextFiles("/user/spark/sparkgatk_L001/sort_bam")
       .map(itr => (itr._1.split("/").last.split("-")(1).toInt, itr._1))
-    val firstHalf = data.groupByKey(NGSSparkConf.getChromosomeNum(conf)).map(itr => {
+    val firstHalf = data.groupByKey(ProgramVariable.CHR_NUM).map(itr => {
       var bamFileOne = ""
       var bamFileTwo = ""
       for (bam <- itr._2) {
@@ -377,32 +383,33 @@ object NGSSpark {
     * @param avgn            Average number of sam records for all chromosome
     * @return Array of regroup sam record, the number of elements in this array is 1 (one part) or 2 (two part)
     */
-  def balanceLoad(record: (Int, MySAMRecord), chromosomesInfo: Map[Int, (Int, Int)], avgn: Long, CHR_NUM: Int): Array[(Int, MySAMRecord)] = {
+  def balanceLoad(record: MySAMRecord, chromosomesInfo: Map[Int, (Int, Int)], avgn: Long, CHR_NUM: Int): Array[MySAMRecord] = {
 
-    val output: ArrayBuffer[(Int, MySAMRecord)] = ArrayBuffer.empty
+    val output: ArrayBuffer[MySAMRecord] = ArrayBuffer.empty
     val limit = avgn * 1.5
-    var key = record._1
-    val sam = record._2
+    var key = record.regionId
+
     if (key >= 1 && key <= CHR_NUM) {
       val chrNum = chromosomesInfo.size
       val chrInfo = chromosomesInfo(key)
       if (chrInfo._1 > limit) {
-        val beginPos = if (!sam.mateReference) sam.startPos else sam.mateStartPos
+        val beginPos = if (!record.mateReference) record.startPos else record.mateStartPos
         if (beginPos > (chrInfo._2 / 2)) {
-          key = key + chrNum
-          output.append((key, sam))
+          record.addRegionId(chrNum)
+          output.append(record)
         } else {
-          output.append((key, sam))
-          val endPos = beginPos + sam.readLen
+          output.append(record)
+          val endPos = beginPos + record.readLen
           if (endPos > (chrInfo._2 / 2)) {
-            output.append((key + chrNum, sam))
+            record.addRegionId(chrNum)
+            output.append(record)
           }
         }
       } else {
-        output.append((key, sam))
+        output.append(record)
       }
     } else {
-      output.append((key, sam))
+      output.append(record)
     }
     output.toArray
   }

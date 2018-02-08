@@ -1,5 +1,7 @@
 package edu.hust.elwg.tools
 
+import edu.hust.elwg.utils.NGSSparkConf
+
 import scala.collection.mutable.ArrayBuffer
 
 object CommandGenerator {
@@ -39,10 +41,10 @@ object CommandGenerator {
     if (isPaired) command += bwaOption(0)
     command += bwaOption(1)
     command += numberOfThreads.toString
-    command += bwaOption(3)
-    command += bwaOption(4)
+    command ++= customArgs.split("\\s+")
     command += bwaOption(2)
     command += readGroup
+
     if (useSTDIN) {
       command += "/dev/stdin"
     } else {
@@ -50,8 +52,8 @@ object CommandGenerator {
       if (!isPaired && bwaReadsFile2 != null)
         command += bwaReadsFile2
     }
-
-    addToCommand(command.toArray, customArgs)
+    command.toArray
+    //addToCommand(command.toArray, customArgs)
   }
 }
 

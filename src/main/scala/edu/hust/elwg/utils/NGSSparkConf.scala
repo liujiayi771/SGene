@@ -150,17 +150,17 @@ object NGSSparkConf {
     dict
   }
 
-  val chromosomeNum: String = "chrnum"
-
-  def setChromosomeNum(conf: SparkConf, value: Int): Unit = conf.set(chromosomeNum, value.toString)
-
-  def getChromosomeNum(conf: SparkConf): Int = conf.get(chromosomeNum).toInt
-
-  val otherChrIndex: String = "otherchrindex"
-
-  def setOtherChrIndex(conf: SparkConf, value: Int): Unit = conf.set(otherChrIndex, value.toString)
-
-  def getOtherChrIndex(conf: SparkConf): Int = conf.get(otherChrIndex).toInt
+//  val chromosomeNum: String = "chrnum"
+//
+//  def setChromosomeNum(conf: SparkConf, value: Int): Unit = conf.set(chromosomeNum, value.toString)
+//
+//  def getChromosomeNum(conf: SparkConf): Int = conf.get(chromosomeNum).toInt
+//
+//  val otherChrIndex: String = "otherchrindex"
+//
+//  def setOtherChrIndex(conf: SparkConf, value: Int): Unit = conf.set(otherChrIndex, value.toString)
+//
+//  def getOtherChrIndex(conf: SparkConf): Int = conf.get(otherChrIndex).toInt
 
   val useLocalCProgram: String = "uselocalcprogram"
 
