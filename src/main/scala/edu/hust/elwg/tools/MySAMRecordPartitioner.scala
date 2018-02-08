@@ -7,9 +7,8 @@ class MySAMRecordPartitioner(numParts: Int) extends Partitioner {
 
   override def getPartition(key: Any): Int = {
     val record: MySAMRecord = key.asInstanceOf[MySAMRecord]
-    val read1Ref = record.referenceIndex
-    val chr = if (read1Ref < ProgramVariable.CHR_NUM) read1Ref + 1 else ProgramVariable.OTHER_CHR_INDEX
-    val code = chr.hashCode() % numPartitions
+
+    val code = record.regionId % numPartitions
     if (code < 0) {
       code + numPartitions
     } else {

@@ -388,7 +388,7 @@ object NGSSpark {
 
     val output: ArrayBuffer[MySAMRecord] = ArrayBuffer.empty
     val limit = avgn * 1.5
-    var key = record.regionId
+    val key = record.regionId
 
     if (key >= 1 && key <= CHR_NUM) {
       val chrNum = chromosomesInfo.size
