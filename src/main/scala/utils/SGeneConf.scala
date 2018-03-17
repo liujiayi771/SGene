@@ -1,6 +1,6 @@
-package edu.hust.elwg.utils
+package utils
 
-import edu.hust.elwg.tools.ReadGroup
+import tools.ReadGroup
 import htsjdk.samtools.{SAMSequenceDictionary, SAMSequenceRecord}
 import org.apache.spark.SparkConf
 
@@ -9,7 +9,7 @@ import scala.collection.JavaConversions._
 /**
   * Created by joey on 2017/5/15.
   */
-object NGSSparkConf {
+object SGeneConf {
   /** ------------------------------------------------ Boolean param --------------------------------------------- **/
 
   val drop = "drop"

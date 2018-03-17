@@ -1,6 +1,4 @@
-package edu.hust.elwg.tools
-
-import edu.hust.elwg.utils.NGSSparkConf
+package tools
 
 import scala.collection.mutable.ArrayBuffer
 

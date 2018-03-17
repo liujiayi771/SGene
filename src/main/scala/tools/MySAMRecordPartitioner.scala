@@ -1,4 +1,4 @@
-package edu.hust.elwg.tools
+package tools
 
 import org.apache.spark.Partitioner
 

@@ -1,9 +1,9 @@
-package edu.hust.elwg.utils
+package utils
 
-import java.io.{BufferedWriter, File, FileWriter, IOException}
+import java.io.IOException
 import java.net.URISyntaxException
 
-import edu.hust.elwg.tools.{ChromosomeTools, ReadGroup}
+import tools.ReadGroup
 import htsjdk.samtools.{SAMSequenceDictionary, SAMSequenceRecord}
 import org.apache.spark.SparkConf
 import org.sellmerfud.optparse.{OptionParser, OptionParserException}
@@ -88,33 +88,33 @@ object CommandLine {
 
   private def setSparkConf(conf: SparkConf): Unit = {
     /** Boolean param */
-    NGSSparkConf.setKeepChrSplitPairs(conf, param.drop)
+    SGeneConf.setKeepChrSplitPairs(conf, param.drop)
 
     /** Files param */
-    NGSSparkConf.setBin(conf, param.bin)
-    NGSSparkConf.setIndex(conf, param.index)
-    NGSSparkConf.setInput(conf, param.input)
-    NGSSparkConf.setLocalTmp(conf, param.localTmp)
-    NGSSparkConf.setHdfsTmp(conf, param.hdfsTmp)
-    NGSSparkConf.setBedFile(conf, param.targetBed)
-    NGSSparkConf.setOutput(conf, param.output)
+    SGeneConf.setBin(conf, param.bin)
+    SGeneConf.setIndex(conf, param.index)
+    SGeneConf.setInput(conf, param.input)
+    SGeneConf.setLocalTmp(conf, param.localTmp)
+    SGeneConf.setHdfsTmp(conf, param.hdfsTmp)
+    SGeneConf.setBedFile(conf, param.targetBed)
+    SGeneConf.setOutput(conf, param.output)
 
     /** Threads and partitions */
-    NGSSparkConf.setPartitionNum(conf, param.partitionNum)
-    NGSSparkConf.setBWAThreads(conf, param.BWAThreads)
+    SGeneConf.setPartitionNum(conf, param.partitionNum)
+    SGeneConf.setBWAThreads(conf, param.BWAThreads)
 
     /** Arguments */
     parseCustomArgs(conf)
 
     /** Read group information */
     for (rg <- param.readGroup) {
-      NGSSparkConf.setReadGroup(conf, new ReadGroup(rg))
+      SGeneConf.setReadGroup(conf, new ReadGroup(rg))
     }
 
     /** Others */
     parseDictFile(conf)
-    NGSSparkConf.setUseLocalCProgram(conf, param.useLocalCProgram)
-    NGSSparkConf.setUseSplitTargetBed(conf, param.useSplitTargetBed)
+    SGeneConf.setUseLocalCProgram(conf, param.useLocalCProgram)
+    SGeneConf.setUseSplitTargetBed(conf, param.useSplitTargetBed)
   }
 
   private def parseCustomArgs(conf: SparkConf): Unit = {
@@ -124,7 +124,7 @@ object CommandLine {
       val programAndTool = elements(0).split('_')
       val programName = programAndTool(0)
       val toolName = if (programAndTool.length == 1) "" else programAndTool(1)
-      NGSSparkConf.setCustomArgs(conf, programName, toolName, elements(1))
+      SGeneConf.setCustomArgs(conf, programName, toolName, elements(1))
     }
   }
 
@@ -145,7 +145,7 @@ object CommandLine {
         val seq: SAMSequenceRecord = new SAMSequenceRecord(seqName, seqLength)
         dict.addSequence(seq)
       }
-      NGSSparkConf.setSequenceDictionary(conf, dict)
+      SGeneConf.setSequenceDictionary(conf, dict)
     } catch {
       case e: URISyntaxException => Logger.EXCEPTION(e)
       case e: IOException => Logger.EXCEPTION(e)

@@ -1,4 +1,4 @@
-package edu.hust.elwg.tools
+package tools
 
 object ProgramVariable {
   val OTHER_CHR_INDEX: Int = 49
