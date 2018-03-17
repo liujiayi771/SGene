@@ -1,10 +1,8 @@
-package edu.hust.elwg
-
 import java.io.File
 import java.net.URISyntaxException
 
-import edu.hust.elwg.tools._
-import edu.hust.elwg.utils.{Logger, NGSSparkConf, NGSSparkFileUtils}
+import tools._
+import utils.{Logger, SGeneConf, SGeneFileUtils}
 import htsjdk.samtools._
 import org.apache.spark.SparkConf
 
@@ -13,17 +11,17 @@ import scala.io.Source
 class VariantCalling(settings: Array[(String, String)], regionId: Int) {
   val conf = new SparkConf()
   conf.setAll(settings)
-  val chrId: Int = if (regionId <= NGSSparkConf.getChromosomeNum(conf)) regionId else regionId - NGSSparkConf.getChromosomeNum(conf)
-  val localTmp: String = NGSSparkConf.getLocalTmp(conf)
-  val readGroupIdSet: Array[String] = NGSSparkConf.getReadGroupId(conf)
+  val chrId: Int = if (regionId <= SGeneConf.getChromosomeNum(conf)) regionId else regionId - SGeneConf.getChromosomeNum(conf)
+  val localTmp: String = SGeneConf.getLocalTmp(conf)
+  val readGroupIdSet: Array[String] = SGeneConf.getReadGroupId(conf)
 
   val randomString: String = CommandGenerator.randomString(8)
   val tmpFileBase: String = localTmp + randomString + "-" + regionId
 
-  val bin: String = NGSSparkConf.getBin(conf)
-  val index: String = NGSSparkConf.getIndex(conf)
+  val bin: String = SGeneConf.getBin(conf)
+  val index: String = SGeneConf.getIndex(conf)
 
-  val useSplitTargetBed: Boolean = NGSSparkConf.getUseLocalCProgram(conf)
+  val useSplitTargetBed: Boolean = SGeneConf.getUseLocalCProgram(conf)
 
   val TARGET_BED_DIR: String = localTmp + "targetBed/"
   val SORT_DIR: String = localTmp + "sort_bam/"
@@ -34,9 +32,9 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
   val BASE_RECALIBRATOR_TABLE: String = localTmp + "base_recalibrator_table/"
   val PRINT_READS_DIR: String = localTmp + "print_reads_bam/"
   val MUTECT2_DIR: String = localTmp + "vcf/"
-  val OTHER_CHR_INDEX: Int = NGSSparkConf.getOtherChrIndex(conf)
+  val OTHER_CHR_INDEX: Int = SGeneConf.getOtherChrIndex(conf)
 
-  val dict: SAMSequenceDictionary = NGSSparkConf.getSequenceDictionary(conf)
+  val dict: SAMSequenceDictionary = SGeneConf.getSequenceDictionary(conf)
   val header: SAMFileHeader = new SAMFileHeader()
   header.setSequenceDictionary(dict)
 
@@ -65,19 +63,19 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     val samRecordsListOne = unsortedSamRecords.filter(_.RGID == readGroupIdSet(0)).toArray
     val samRecordsListTwo = unsortedSamRecords.filter(_.RGID == readGroupIdSet(1)).toArray
 
-    writeUnSortedBamFile(NGSSparkConf.getReadGroup(conf, readGroupIdSet(0)), samRecordsListOne)
-    writeUnSortedBamFile(NGSSparkConf.getReadGroup(conf, readGroupIdSet(1)), samRecordsListTwo)
+    writeUnSortedBamFile(SGeneConf.getReadGroup(conf, readGroupIdSet(0)), samRecordsListOne)
+    writeUnSortedBamFile(SGeneConf.getReadGroup(conf, readGroupIdSet(1)), samRecordsListTwo)
 
     scala.util.Sorting.quickSort(samRecordsListOne)
     scala.util.Sorting.quickSort(samRecordsListTwo)
 
     // Write the sorted sam records to disk in bam format
-    val sortedBamFileOne = writeSortedBamFile(NGSSparkConf.getReadGroup(conf, readGroupIdSet(0)), samRecordsListOne)
-    val sortedBamFileTwo = writeSortedBamFile(NGSSparkConf.getReadGroup(conf, readGroupIdSet(1)), samRecordsListTwo)
+    val sortedBamFileOne = writeSortedBamFile(SGeneConf.getReadGroup(conf, readGroupIdSet(0)), samRecordsListOne)
+    val sortedBamFileTwo = writeSortedBamFile(SGeneConf.getReadGroup(conf, readGroupIdSet(1)), samRecordsListTwo)
 
     // Mark duplicates of the sorted bam file
-    val markDuplicatesBamFileOne = markDuplicates(NGSSparkConf.getReadGroup(conf, readGroupIdSet(0)), sortedBamFileOne)
-    val markDuplicatesBamFileTwo = markDuplicates(NGSSparkConf.getReadGroup(conf, readGroupIdSet(1)), sortedBamFileTwo)
+    val markDuplicatesBamFileOne = markDuplicates(SGeneConf.getReadGroup(conf, readGroupIdSet(0)), sortedBamFileOne)
+    val markDuplicatesBamFileTwo = markDuplicates(SGeneConf.getReadGroup(conf, readGroupIdSet(1)), sortedBamFileTwo)
 
     // Run indelRealignment
     val indelRealignmentOutSet = indelRealignment(markDuplicatesBamFileOne, markDuplicatesBamFileTwo)
@@ -85,8 +83,8 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     val indelRealignmentBamFileTwo = indelRealignmentOutSet._2
 
     // Run baseRecalibrator
-    baseRecalibrator(NGSSparkConf.getReadGroup(conf, readGroupIdSet(0)), indelRealignmentBamFileOne)
-    baseRecalibrator(NGSSparkConf.getReadGroup(conf, readGroupIdSet(1)), indelRealignmentBamFileTwo)
+    baseRecalibrator(SGeneConf.getReadGroup(conf, readGroupIdSet(0)), indelRealignmentBamFileOne)
+    baseRecalibrator(SGeneConf.getReadGroup(conf, readGroupIdSet(1)), indelRealignmentBamFileTwo)
 
     (regionId, indelRealignmentOutSet._3, indelRealignmentOutSet._4)
   }
@@ -99,18 +97,18 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     val samRecordsListOne = unsortedSamRecords.filter(_.RGID == readGroupIdSet(0)).toArray
     val samRecordsListTwo = unsortedSamRecords.filter(_.RGID == readGroupIdSet(1)).toArray
 
-    val unsortedBamOne = writeUnSortedBamFile(NGSSparkConf.getReadGroup(conf, readGroupIdSet(0)), samRecordsListOne)
-    val unsortedBamTwo = writeUnSortedBamFile(NGSSparkConf.getReadGroup(conf, readGroupIdSet(1)), samRecordsListTwo)
+    val unsortedBamOne = writeUnSortedBamFile(SGeneConf.getReadGroup(conf, readGroupIdSet(0)), samRecordsListOne)
+    val unsortedBamTwo = writeUnSortedBamFile(SGeneConf.getReadGroup(conf, readGroupIdSet(1)), samRecordsListTwo)
 
-    val sortedBamFileOne = tmpFileBase + "-" + NGSSparkConf.getReadGroup(conf, readGroupIdSet(0)).RGID + "-sorted.bam"
-    val sortedBamFileTwo = tmpFileBase + "-" + NGSSparkConf.getReadGroup(conf, readGroupIdSet(1)).RGID + "-sorted.bam"
+    val sortedBamFileOne = tmpFileBase + "-" + SGeneConf.getReadGroup(conf, readGroupIdSet(0)).RGID + "-sorted.bam"
+    val sortedBamFileTwo = tmpFileBase + "-" + SGeneConf.getReadGroup(conf, readGroupIdSet(1)).RGID + "-sorted.bam"
 
     tools.runSortBamSamtools(unsortedBamOne, sortedBamFileOne, 6)
     tools.runSortBamSamtools(unsortedBamTwo, sortedBamFileTwo, 6)
 
     // Mark duplicates of the sorted bam file
-    val markDuplicatesBamFileOne = markDuplicates(NGSSparkConf.getReadGroup(conf, readGroupIdSet(0)), sortedBamFileOne)
-    val markDuplicatesBamFileTwo = markDuplicates(NGSSparkConf.getReadGroup(conf, readGroupIdSet(1)), sortedBamFileTwo)
+    val markDuplicatesBamFileOne = markDuplicates(SGeneConf.getReadGroup(conf, readGroupIdSet(0)), sortedBamFileOne)
+    val markDuplicatesBamFileTwo = markDuplicates(SGeneConf.getReadGroup(conf, readGroupIdSet(1)), sortedBamFileTwo)
 
     // Run indelRealignment
     val indelRealignmentOutSet = indelRealignment(markDuplicatesBamFileOne, markDuplicatesBamFileTwo)
@@ -118,8 +116,8 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     val indelRealignmentBamFileTwo = indelRealignmentOutSet._2
 
     // Run baseRecalibrator
-    baseRecalibrator(NGSSparkConf.getReadGroup(conf, readGroupIdSet(0)), indelRealignmentBamFileOne)
-    baseRecalibrator(NGSSparkConf.getReadGroup(conf, readGroupIdSet(1)), indelRealignmentBamFileTwo)
+    baseRecalibrator(SGeneConf.getReadGroup(conf, readGroupIdSet(0)), indelRealignmentBamFileOne)
+    baseRecalibrator(SGeneConf.getReadGroup(conf, readGroupIdSet(1)), indelRealignmentBamFileTwo)
 
     (regionId, indelRealignmentOutSet._3, indelRealignmentOutSet._4)
   }
@@ -133,8 +131,8 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     tools.runBuildBamIndexPicard(inputBamFileTwo)
 
     // Run printReads
-    val printReadsFileOne = printReads(NGSSparkConf.getReadGroup(conf, readGroupIdSet(0)), inputBamFileOne, inputTableOne)
-    val printReadsFileTwo = printReads(NGSSparkConf.getReadGroup(conf, readGroupIdSet(1)), inputBamFileTwo, inputTableTwo)
+    val printReadsFileOne = printReads(SGeneConf.getReadGroup(conf, readGroupIdSet(0)), inputBamFileOne, inputTableOne)
+    val printReadsFileTwo = printReads(SGeneConf.getReadGroup(conf, readGroupIdSet(1)), inputBamFileTwo, inputTableTwo)
 
     // Run mutect2
     val vcfOutputFile = mutect2(printReadsFileOne, printReadsFileTwo)
@@ -162,21 +160,21 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     }
     val samRecordsList = unsortedSamRecords.toArray
 
-    writeUnSortedBamFile(NGSSparkConf.getReadGroup(conf, readGroupIdSet(0)), samRecordsList)
+    writeUnSortedBamFile(SGeneConf.getReadGroup(conf, readGroupIdSet(0)), samRecordsList)
 
     scala.util.Sorting.quickSort(samRecordsList)
 
     // Write the sorted sam records to disk in bam format
-    val sortedBamFile = writeSortedBamFile(NGSSparkConf.getReadGroup(conf, readGroupIdSet(0)), samRecordsList)
+    val sortedBamFile = writeSortedBamFile(SGeneConf.getReadGroup(conf, readGroupIdSet(0)), samRecordsList)
 
     // Mark duplicates of the sorted bam file
-    val markDuplicatesBamFileOne = markDuplicates(NGSSparkConf.getReadGroup(conf, readGroupIdSet(0)), sortedBamFile)
+    val markDuplicatesBamFileOne = markDuplicates(SGeneConf.getReadGroup(conf, readGroupIdSet(0)), sortedBamFile)
 
     // Run indelRealignment
     val indelRealignmentOut = indelRealignment(markDuplicatesBamFileOne)
 
     // Run baseRecalibrator
-    baseRecalibrator(NGSSparkConf.getReadGroup(conf, readGroupIdSet(0)), indelRealignmentOut)
+    baseRecalibrator(SGeneConf.getReadGroup(conf, readGroupIdSet(0)), indelRealignmentOut)
 
     (regionId, indelRealignmentOut)
   }
@@ -189,7 +187,7 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     tools.runBuildBamIndexPicard(inputBamFile)
 
     // Run printReads
-    val printReadsFile = printReads(NGSSparkConf.getReadGroup(conf, readGroupIdSet(0)), inputBamFile, inputTable)
+    val printReadsFile = printReads(SGeneConf.getReadGroup(conf, readGroupIdSet(0)), inputBamFile, inputTable)
 
     // Run HaplotypeCaller
     val vcfOutputFile = haplotypeCaller(printReadsFile)
@@ -222,12 +220,12 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     scala.util.Sorting.quickSort(samRecordsListTwo)
 
     // Write the sorted sam records to disk in bam format
-    val sortedBamFileOne = writeSortedBamFile(NGSSparkConf.getReadGroup(conf, readGroupIdSet(0)), samRecordsListOne)
-    val sortedBamFileTwo = writeSortedBamFile(NGSSparkConf.getReadGroup(conf, readGroupIdSet(1)), samRecordsListTwo)
+    val sortedBamFileOne = writeSortedBamFile(SGeneConf.getReadGroup(conf, readGroupIdSet(0)), samRecordsListOne)
+    val sortedBamFileTwo = writeSortedBamFile(SGeneConf.getReadGroup(conf, readGroupIdSet(1)), samRecordsListTwo)
 
     // Mark duplicates of the sorted bam file
-    val markDuplicatesBamFileOne = markDuplicates(NGSSparkConf.getReadGroup(conf, readGroupIdSet(0)), sortedBamFileOne)
-    val markDuplicatesBamFileTwo = markDuplicates(NGSSparkConf.getReadGroup(conf, readGroupIdSet(1)), sortedBamFileTwo)
+    val markDuplicatesBamFileOne = markDuplicates(SGeneConf.getReadGroup(conf, readGroupIdSet(0)), sortedBamFileOne)
+    val markDuplicatesBamFileTwo = markDuplicates(SGeneConf.getReadGroup(conf, readGroupIdSet(1)), sortedBamFileTwo)
 
     // Run indelRealignment
     val indelRealignmentOutSet = indelRealignment(markDuplicatesBamFileOne, markDuplicatesBamFileTwo)
@@ -235,8 +233,8 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     val indelRealignmentBamFileTwo = indelRealignmentOutSet._2
 
     // Run baseQualityScoreRecalibration
-    val baseQualityScoreRecalibrationBamFileOne = baseQualityScoreRecalibration(NGSSparkConf.getReadGroup(conf, readGroupIdSet(0)), indelRealignmentBamFileOne)
-    val baseQualityScoreRecalibrationBamFileTwo = baseQualityScoreRecalibration(NGSSparkConf.getReadGroup(conf, readGroupIdSet(1)), indelRealignmentBamFileTwo)
+    val baseQualityScoreRecalibrationBamFileOne = baseQualityScoreRecalibration(SGeneConf.getReadGroup(conf, readGroupIdSet(0)), indelRealignmentBamFileOne)
+    val baseQualityScoreRecalibrationBamFileTwo = baseQualityScoreRecalibration(SGeneConf.getReadGroup(conf, readGroupIdSet(1)), indelRealignmentBamFileTwo)
 
     // Run mutect2
     val vcfOutputFile = mutect2(baseQualityScoreRecalibrationBamFileOne, baseQualityScoreRecalibrationBamFileTwo)
@@ -252,16 +250,16 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     val localInputBamFileOne = localTmp + inputBamFileOne.split("/").last
     val localInputBamFileTwo = localTmp + inputBamFileTwo.split("/").last
 
-    NGSSparkFileUtils.downloadFileFromHdfs(inputBamFileOne, localInputBamFileOne)
-    NGSSparkFileUtils.downloadFileFromHdfs(inputBamFileTwo, localInputBamFileTwo)
+    SGeneFileUtils.downloadFileFromHdfs(inputBamFileOne, localInputBamFileOne)
+    SGeneFileUtils.downloadFileFromHdfs(inputBamFileTwo, localInputBamFileTwo)
 
     // Build bam index
     tools.runBuildBamIndexPicard(localInputBamFileOne)
     tools.runBuildBamIndexPicard(localInputBamFileTwo)
 
     // Mark duplicates of the sorted bam file
-    val markDuplicatesBamFileOne = markDuplicates(NGSSparkConf.getReadGroup(conf, readGroupIdSet(0)), localInputBamFileOne)
-    val markDuplicatesBamFileTwo = markDuplicates(NGSSparkConf.getReadGroup(conf, readGroupIdSet(1)), localInputBamFileTwo)
+    val markDuplicatesBamFileOne = markDuplicates(SGeneConf.getReadGroup(conf, readGroupIdSet(0)), localInputBamFileOne)
+    val markDuplicatesBamFileTwo = markDuplicates(SGeneConf.getReadGroup(conf, readGroupIdSet(1)), localInputBamFileTwo)
 
     // Run indelRealignment
     val indelRealignmentOutSet = indelRealignment(markDuplicatesBamFileOne, markDuplicatesBamFileTwo)
@@ -269,8 +267,8 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     val indelRealignmentBamFileTwo = indelRealignmentOutSet._2
 
     // Run baseRecalibrator
-    baseRecalibrator(NGSSparkConf.getReadGroup(conf, readGroupIdSet(0)), indelRealignmentBamFileOne)
-    baseRecalibrator(NGSSparkConf.getReadGroup(conf, readGroupIdSet(1)), indelRealignmentBamFileTwo)
+    baseRecalibrator(SGeneConf.getReadGroup(conf, readGroupIdSet(0)), indelRealignmentBamFileOne)
+    baseRecalibrator(SGeneConf.getReadGroup(conf, readGroupIdSet(1)), indelRealignmentBamFileTwo)
 
     (regionId, indelRealignmentOutSet._3, indelRealignmentOutSet._4)
   }
@@ -283,8 +281,8 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     val localInputBamFileOne = localTmp + inputBamFileOne.split("/").last
     val localInputBamFileTwo = localTmp + inputBamFileTwo.split("/").last
 
-    NGSSparkFileUtils.downloadFileFromHdfs(inputBamFileOne, localInputBamFileOne)
-    NGSSparkFileUtils.downloadFileFromHdfs(inputBamFileTwo, localInputBamFileTwo)
+    SGeneFileUtils.downloadFileFromHdfs(inputBamFileOne, localInputBamFileOne)
+    SGeneFileUtils.downloadFileFromHdfs(inputBamFileTwo, localInputBamFileTwo)
 
     // Build bam index
     tools.runBuildBamIndexPicard(localInputBamFileOne)
@@ -296,8 +294,8 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     val indelRealignmentBamFileTwo = indelRealignmentOutSet._2
 
     // Run baseRecalibrator
-    baseRecalibrator(NGSSparkConf.getReadGroup(conf, readGroupIdSet(0)), indelRealignmentBamFileOne)
-    baseRecalibrator(NGSSparkConf.getReadGroup(conf, readGroupIdSet(1)), indelRealignmentBamFileTwo)
+    baseRecalibrator(SGeneConf.getReadGroup(conf, readGroupIdSet(0)), indelRealignmentBamFileOne)
+    baseRecalibrator(SGeneConf.getReadGroup(conf, readGroupIdSet(1)), indelRealignmentBamFileTwo)
 
     (regionId, indelRealignmentOutSet._3, indelRealignmentOutSet._4)
   }
@@ -310,16 +308,16 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     val localInputBamFileOne = localTmp + inputBamFileOne.split("/").last
     val localInputBamFileTwo = localTmp + inputBamFileTwo.split("/").last
 
-    NGSSparkFileUtils.downloadFileFromHdfs(inputBamFileOne, localInputBamFileOne)
-    NGSSparkFileUtils.downloadFileFromHdfs(inputBamFileTwo, localInputBamFileTwo)
+    SGeneFileUtils.downloadFileFromHdfs(inputBamFileOne, localInputBamFileOne)
+    SGeneFileUtils.downloadFileFromHdfs(inputBamFileTwo, localInputBamFileTwo)
 
     // Build bam index
     tools.runBuildBamIndexPicard(localInputBamFileOne)
     tools.runBuildBamIndexPicard(localInputBamFileTwo)
 
     // Run baseRecalibrator
-    baseRecalibrator(NGSSparkConf.getReadGroup(conf, readGroupIdSet(0)), localInputBamFileOne)
-    baseRecalibrator(NGSSparkConf.getReadGroup(conf, readGroupIdSet(1)), localInputBamFileTwo)
+    baseRecalibrator(SGeneConf.getReadGroup(conf, readGroupIdSet(0)), localInputBamFileOne)
+    baseRecalibrator(SGeneConf.getReadGroup(conf, readGroupIdSet(1)), localInputBamFileTwo)
 
     (regionId, inputBamFileOne, inputBamFileTwo)
   }
@@ -330,8 +328,8 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     val localInputBamFileOne = localTmp + inputBamFileOne.split("/").last
     val localInputBamFileTwo = localTmp + inputBamFileTwo.split("/").last
 
-    NGSSparkFileUtils.downloadFileFromHdfs(inputBamFileOne, localInputBamFileOne)
-    NGSSparkFileUtils.downloadFileFromHdfs(inputBamFileTwo, localInputBamFileTwo)
+    SGeneFileUtils.downloadFileFromHdfs(inputBamFileOne, localInputBamFileOne)
+    SGeneFileUtils.downloadFileFromHdfs(inputBamFileTwo, localInputBamFileTwo)
 
     // Run mutect2
     val vcfOutputFile = mutect2(localInputBamFileOne, localInputBamFileTwo)
@@ -342,7 +340,7 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
   }
 
   def writeSortedBamFile(rg: ReadGroup, sortedSamRecords: Array[MySAMRecord]): String = {
-    NGSSparkFileUtils.mkLocalDir(SORT_DIR, delete = false)
+    SGeneFileUtils.mkLocalDir(SORT_DIR, delete = false)
 
     val factory: SAMFileWriterFactory = new SAMFileWriterFactory()
     val outHeader = header.clone()
@@ -372,7 +370,7 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
 
     val outHeader = header.clone()
     outHeader.setSortOrder(SAMFileHeader.SortOrder.coordinate)
-    outHeader.addReadGroup(NGSSparkConf.getReadGroup(conf, readGroupIdSet(rg)).getSAMReadGroupRecord())
+    outHeader.addReadGroup(SGeneConf.getReadGroup(conf, readGroupIdSet(rg)).getSAMReadGroupRecord())
     val samRecordFactory: SAMRecordFactory = new DefaultSAMRecordFactory()
     val validationStringency: ValidationStringency = ValidationStringency.LENIENT
     val parser: SAMLineParser = new SAMLineParser(samRecordFactory, validationStringency, outHeader, null, null)
@@ -384,7 +382,7 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
       val read2Ref = sam.getMateReferenceIndex
       if (!sam.getReadUnmappedFlag &&
         (read1Ref >= 0 || read2Ref >= 0)) {
-        val chr = if (referenceIndex >= 0 && referenceIndex < NGSSparkConf.getChromosomeNum(conf)) referenceIndex + 1 else OTHER_CHR_INDEX
+        val chr = if (referenceIndex >= 0 && referenceIndex < SGeneConf.getChromosomeNum(conf)) referenceIndex + 1 else OTHER_CHR_INDEX
         samRecordList = (chr, new MySAMRecord(sam, itr, mateReference = true)) :: samRecordList
       }
     }
@@ -392,7 +390,7 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
   }
 
   def writeUnSortedBamFile(rg: ReadGroup, sortedSamRecords: Array[MySAMRecord]): String = {
-    NGSSparkFileUtils.mkLocalDir(UN_SORT_DIR, delete = false)
+    SGeneFileUtils.mkLocalDir(UN_SORT_DIR, delete = false)
 
     val factory: SAMFileWriterFactory = new SAMFileWriterFactory()
     val outHeader = header.clone()
@@ -418,8 +416,8 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
   }
 
   def markDuplicates(rg: ReadGroup, inputBamFile: String): String = {
-    NGSSparkFileUtils.mkLocalDir(MARK_DUPLICATES_DIR, delete = false)
-    NGSSparkFileUtils.mkLocalDir(MARK_DUPLICATES_METRICS_DIR, delete = false)
+    SGeneFileUtils.mkLocalDir(MARK_DUPLICATES_DIR, delete = false)
+    SGeneFileUtils.mkLocalDir(MARK_DUPLICATES_METRICS_DIR, delete = false)
 
     val tools = new PreprocessTools(bin, conf)
 
@@ -438,7 +436,7 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
   }
 
   def indelRealignment(inputBamFileOne: String, inputBamFileTwo: String): (String, String, String, String) = {
-    NGSSparkFileUtils.mkLocalDir(INDEL_REALIGNMENT_DIR, delete = false)
+    SGeneFileUtils.mkLocalDir(INDEL_REALIGNMENT_DIR, delete = false)
 
     val gatk = new GATKTools(index, bin, conf)
 
@@ -453,11 +451,11 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
 
     val bed =
       if (splitBed) {
-        if (NGSSparkConf.getTargetBedChr(conf).contains(chrId)) {
-          NGSSparkFileUtils.downloadFileFromHdfs(TARGET_BED_DIR + chrId + ".bed", localTmp + chrId + ".bed")
+        if (SGeneConf.getTargetBedChr(conf).contains(chrId)) {
+          SGeneFileUtils.downloadFileFromHdfs(TARGET_BED_DIR + chrId + ".bed", localTmp + chrId + ".bed")
           localTmp + chrId + ".bed"
         } else {
-          NGSSparkFileUtils.downloadFileFromHdfs(TARGET_BED_DIR + "empty.bed", localTmp + "empty.bed")
+          SGeneFileUtils.downloadFileFromHdfs(TARGET_BED_DIR + "empty.bed", localTmp + "empty.bed")
           localTmp + "empty.bed"
         }
       } else {
@@ -468,14 +466,14 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
 
     gatk.runIndelRealigner(inputBamFileOne, inputBamFileTwo, targetsFile, nWayOut, index)
 
-    NGSSparkFileUtils.copyFileInLocal(outBamFileOne, nfsOutBamFileOne, delete = true)
-    NGSSparkFileUtils.copyFileInLocal(outBamFileTwo, nfsOutBamFileTwo, delete = true)
+    SGeneFileUtils.copyFileInLocal(outBamFileOne, nfsOutBamFileOne, delete = true)
+    SGeneFileUtils.copyFileInLocal(outBamFileTwo, nfsOutBamFileTwo, delete = true)
 
     (outBamFileOne, outBamFileTwo, nfsOutBamFileOne, nfsOutBamFileTwo)
   }
 
   def indelRealignment(inputBamFile: String): String = {
-    NGSSparkFileUtils.mkLocalDir(INDEL_REALIGNMENT_DIR, delete = false)
+    SGeneFileUtils.mkLocalDir(INDEL_REALIGNMENT_DIR, delete = false)
 
     val gatk = new GATKTools(index, bin, conf)
 
@@ -487,11 +485,11 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
 
     val bed =
       if (splitBed) {
-        if (NGSSparkConf.getTargetBedChr(conf).contains(chrId)) {
-          NGSSparkFileUtils.downloadFileFromHdfs(TARGET_BED_DIR + chrId + ".bed", localTmp + chrId + ".bed")
+        if (SGeneConf.getTargetBedChr(conf).contains(chrId)) {
+          SGeneFileUtils.downloadFileFromHdfs(TARGET_BED_DIR + chrId + ".bed", localTmp + chrId + ".bed")
           localTmp + chrId + ".bed"
         } else {
-          NGSSparkFileUtils.downloadFileFromHdfs(TARGET_BED_DIR + "empty.bed", localTmp + "empty.bed")
+          SGeneFileUtils.downloadFileFromHdfs(TARGET_BED_DIR + "empty.bed", localTmp + "empty.bed")
           localTmp + "empty.bed"
         }
       } else {
@@ -506,7 +504,7 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
   }
 
   def baseQualityScoreRecalibration(rg: ReadGroup, inputBamFile: String): String = {
-    NGSSparkFileUtils.mkHdfsDir(PRINT_READS_DIR, delete = false)
+    SGeneFileUtils.mkHdfsDir(PRINT_READS_DIR, delete = false)
 
     val gatk = new GATKTools(index, bin, conf)
 
@@ -516,11 +514,11 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
 
     val bed =
       if (splitBed) {
-        if (NGSSparkConf.getTargetBedChr(conf).contains(chrId)) {
-          NGSSparkFileUtils.downloadFileFromHdfs(TARGET_BED_DIR + chrId + ".bed", localTmp + chrId + ".bed")
+        if (SGeneConf.getTargetBedChr(conf).contains(chrId)) {
+          SGeneFileUtils.downloadFileFromHdfs(TARGET_BED_DIR + chrId + ".bed", localTmp + chrId + ".bed")
           localTmp + chrId + ".bed"
         } else {
-          NGSSparkFileUtils.downloadFileFromHdfs(TARGET_BED_DIR + "empty.bed", localTmp + "empty.bed")
+          SGeneFileUtils.downloadFileFromHdfs(TARGET_BED_DIR + "empty.bed", localTmp + "empty.bed")
           localTmp + "empty.bed"
         }
       } else {
@@ -530,15 +528,15 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     gatk.runBaseRecalibrator(inputBamFile, tableFile, index, bed)
     gatk.runPrintReads(inputBamFile, outBamFile, index, tableFile)
 
-    NGSSparkFileUtils.uploadFileToHdfs(outBamFile, hdfsOutBamFile, upload)
+    SGeneFileUtils.uploadFileToHdfs(outBamFile, hdfsOutBamFile, upload)
 
-    NGSSparkFileUtils.deleteLocalFile(inputBamFile, keep)
+    SGeneFileUtils.deleteLocalFile(inputBamFile, keep)
 
     outBamFile
   }
 
   def baseRecalibrator(rg: ReadGroup, inputBamFile: String): Unit = {
-    NGSSparkFileUtils.mkLocalDir(BASE_RECALIBRATOR_TABLE, delete = false)
+    SGeneFileUtils.mkLocalDir(BASE_RECALIBRATOR_TABLE, delete = false)
 
     val gatk = new GATKTools(index, bin, conf)
 
@@ -547,11 +545,11 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
 
     val bed =
       if (splitBed) {
-        if (NGSSparkConf.getTargetBedChr(conf).contains(chrId)) {
-          NGSSparkFileUtils.downloadFileFromHdfs(TARGET_BED_DIR + chrId + ".bed", localTmp + chrId + ".bed")
+        if (SGeneConf.getTargetBedChr(conf).contains(chrId)) {
+          SGeneFileUtils.downloadFileFromHdfs(TARGET_BED_DIR + chrId + ".bed", localTmp + chrId + ".bed")
           localTmp + chrId + ".bed"
         } else {
-          NGSSparkFileUtils.downloadFileFromHdfs(TARGET_BED_DIR + "empty.bed", localTmp + "empty.bed")
+          SGeneFileUtils.downloadFileFromHdfs(TARGET_BED_DIR + "empty.bed", localTmp + "empty.bed")
           localTmp + "empty.bed"
         }
       } else {
@@ -560,12 +558,12 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
 
     gatk.runBaseRecalibrator(inputBamFile, nfsTableFile, index, bed)
 
-    NGSSparkFileUtils.deleteLocalFile(inputBamFile, keep)
-    NGSSparkFileUtils.deleteLocalFile(inputBamFile.split('.').head + ".bai", keep)
+    SGeneFileUtils.deleteLocalFile(inputBamFile, keep)
+    SGeneFileUtils.deleteLocalFile(inputBamFile.split('.').head + ".bai", keep)
   }
 
   def printReads(rg: ReadGroup, inputBamFile: String, table: String): String = {
-    NGSSparkFileUtils.mkLocalDir(PRINT_READS_DIR, delete = false)
+    SGeneFileUtils.mkLocalDir(PRINT_READS_DIR, delete = false)
 
     val gatk = new GATKTools(index, bin, conf)
 
@@ -616,11 +614,11 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
 
     val bed =
       if (useSplitTargetBed) {
-        if (NGSSparkConf.getTargetBedChr(conf).contains(chrId)) {
-          NGSSparkFileUtils.downloadFileFromHdfs(TARGET_BED_DIR + chrId + ".bed", localTmp + chrId + ".bed")
+        if (SGeneConf.getTargetBedChr(conf).contains(chrId)) {
+          SGeneFileUtils.downloadFileFromHdfs(TARGET_BED_DIR + chrId + ".bed", localTmp + chrId + ".bed")
           localTmp + chrId + ".bed"
         } else {
-          NGSSparkFileUtils.downloadFileFromHdfs(TARGET_BED_DIR + "empty.bed", localTmp + "empty.bed")
+          SGeneFileUtils.downloadFileFromHdfs(TARGET_BED_DIR + "empty.bed", localTmp + "empty.bed")
           localTmp + "empty.bed"
         }
       } else {
@@ -633,13 +631,13 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
   }
 
   def writeVCFOutputFile(vcfOutputFile: String): Unit = {
-    NGSSparkFileUtils.mkLocalDir(MUTECT2_DIR, delete = false)
+    SGeneFileUtils.mkLocalDir(MUTECT2_DIR, delete = false)
 
     if (vcfOutputFile != "" && checkVcfIsNotEmpty(vcfOutputFile)) {
       try {
         val nfsVcfOutputFile = MUTECT2_DIR + vcfOutputFile.split("/").last
-        NGSSparkFileUtils.copyFileInLocal(vcfOutputFile, nfsVcfOutputFile, delete = true)
-        NGSSparkFileUtils.copyFileInLocal(vcfOutputFile + ".idx", nfsVcfOutputFile + ".idx", delete = true)
+        SGeneFileUtils.copyFileInLocal(vcfOutputFile, nfsVcfOutputFile, delete = true)
+        SGeneFileUtils.copyFileInLocal(vcfOutputFile + ".idx", nfsVcfOutputFile + ".idx", delete = true)
       } catch {
         case e: URISyntaxException =>
           Logger.EXCEPTION(e)

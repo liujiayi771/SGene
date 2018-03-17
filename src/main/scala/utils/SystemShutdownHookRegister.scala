@@ -1,4 +1,4 @@
-package edu.hust.elwg.utils
+package utils
 
 import scala.collection.mutable.{Map => MMap}
 

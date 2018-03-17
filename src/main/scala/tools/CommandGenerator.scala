@@ -1,4 +1,4 @@
-package edu.hust.elwg.tools
+package tools
 
 import scala.collection.mutable.ArrayBuffer
 

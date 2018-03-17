@@ -1,2 +1,6 @@
 # Created by .ignore support plugin (hsz.mobi)
 .idea
+run
+project/project
+project/target
+target
