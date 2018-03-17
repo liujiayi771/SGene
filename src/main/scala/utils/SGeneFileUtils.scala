@@ -1,11 +1,11 @@
-package edu.hust.elwg.utils
+package utils
 
 import java.io.{File, FileInputStream, FileOutputStream, IOException}
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, FileUtil, Path}
 
-object NGSSparkFileUtils {
+object SGeneFileUtils {
   val RETRIES: Int = 3
 
   def deleteHdfsFile(path: String): Unit = {

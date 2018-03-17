@@ -1,4 +1,4 @@
-package edu.hust.elwg.utils
+package utils
 
 import java.security.Key
 import javax.crypto.Cipher

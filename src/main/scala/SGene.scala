@@ -1,19 +1,16 @@
-package edu.hust.elwg
-
-
 import java.io._
 
-import edu.hust.elwg.tools.{ChromosomeTools, MySAMRecord, PreprocessTools}
-import edu.hust.elwg.utils._
+import utils._
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.{HashPartitioner, SparkConf, SparkContext}
+import tools.{ChromosomeTools, MySAMRecord, PreprocessTools}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 
-object NGSSpark {
+object SGene {
 
   def main(args: Array[String]): Unit = {
     val conf: SparkConf = new SparkConf().setAppName("NGS-Spark")
@@ -24,19 +21,19 @@ object NGSSpark {
     CommandLine.parseParam(args, conf)
     val CHR_NUM = 24
     val OTHER_CHR_INDEX = 49
-    NGSSparkConf.setChromosomeNum(conf, CHR_NUM)
-    NGSSparkConf.setOtherChrIndex(conf, OTHER_CHR_INDEX)
+    SGeneConf.setChromosomeNum(conf, CHR_NUM)
+    SGeneConf.setOtherChrIndex(conf, OTHER_CHR_INDEX)
 
-    val partitionNum = NGSSparkConf.getPartitionNum(conf)
-    val inputDirs = NGSSparkConf.getInput(conf)
-    val outputPrefix = NGSSparkConf.getOutput(conf)
-    val localTmp = NGSSparkConf.getLocalTmp(conf)
-    val bin = NGSSparkConf.getBin(conf)
-    val readGroupIdSet = NGSSparkConf.getReadGroupId(conf)
+    val partitionNum = SGeneConf.getPartitionNum(conf)
+    val inputDirs = SGeneConf.getInput(conf)
+    val outputPrefix = SGeneConf.getOutput(conf)
+    val localTmp = SGeneConf.getLocalTmp(conf)
+    val bin = SGeneConf.getBin(conf)
+    val readGroupIdSet = SGeneConf.getReadGroupId(conf)
     val BASE_RECALIBRATOR_TABLE: String = localTmp + "base_recalibrator_table/"
     val TABLE: String = localTmp + "table/"
     val MUTECT2_DIR: String = localTmp + "vcf/"
-    val chrTools = ChromosomeTools(NGSSparkConf.getSequenceDictionary(conf))
+    val chrTools = ChromosomeTools(SGeneConf.getSequenceDictionary(conf))
 
 
     /** clean tmp file **/
@@ -47,7 +44,7 @@ object NGSSpark {
       NGSSparkFileUtils.mkLocalDir(localTmp, delete = true)
     }).count()
     */
-    NGSSparkFileUtils.mkLocalDir(localTmp, delete = true)
+    SGeneFileUtils.mkLocalDir(localTmp, delete = true)
 
     parseTargetBed(conf)
     val confBC: Broadcast[Array[(String, String)]] = sc.broadcast(conf.getAll)
@@ -83,7 +80,7 @@ object NGSSpark {
     val chrInfo: Map[Int, (Int, Int)] = chrToNumSamRecs.map(record => {
       val conf: SparkConf = new SparkConf()
       conf.setAll(confBC.value)
-      (record._1, (record._2, ChromosomeTools(NGSSparkConf.getSequenceDictionary(conf)).chrLen(record._1)))
+      (record._1, (record._2, ChromosomeTools(SGeneConf.getSequenceDictionary(conf)).chrLen(record._1)))
     }).collect.toMap
 
     /*

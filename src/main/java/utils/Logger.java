@@ -1,4 +1,4 @@
-package edu.hust.elwg.utils;
+package utils;
 
 public class Logger {
     /*
