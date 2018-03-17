@@ -312,7 +312,9 @@ object NGSSparkFileUtils {
   }
 
   def uploadFileToHdfs(from: String, to: String, upload: Boolean): Unit = {
-    attemptUploadFileToHdfs(from, to, upload, RETRIES)
+    if (upload) {
+      attemptUploadFileToHdfs(from, to, upload, RETRIES)
+    }
   }
 
   def privateUploadDirToHdfs(from: String, to: String): Int = {

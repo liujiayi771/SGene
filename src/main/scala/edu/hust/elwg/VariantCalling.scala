@@ -7,13 +7,12 @@ import edu.hust.elwg.tools._
 import edu.hust.elwg.utils.{Logger, NGSSparkConf, NGSSparkFileUtils}
 import htsjdk.samtools._
 import org.apache.spark.SparkConf
-
 import scala.io.Source
 
 class VariantCalling(settings: Array[(String, String)], regionId: Int) {
   val conf = new SparkConf()
   conf.setAll(settings)
-  val chrId: Int = if (regionId <= NGSSparkConf.getChromosomeNum(conf)) regionId else regionId - NGSSparkConf.getChromosomeNum(conf)
+  val chrId: Int = if (regionId <= ProgramVariable.CHR_NUM) regionId else regionId - ProgramVariable.CHR_NUM
   val localTmp: String = NGSSparkConf.getLocalTmp(conf)
   val hdfsTmp: String = NGSSparkConf.getHdfsTmp(conf)
   val readGroupIdSet: Array[String] = NGSSparkConf.getReadGroupId(conf)
@@ -35,7 +34,6 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
   val BASE_RECALIBRATOR_TABLE: String = hdfsTmp + "base_recalibrator_table/"
   val PRINT_READS_DIR: String = hdfsTmp + "print_reads_bam/"
   val MUTECT2_DIR: String = hdfsTmp + "vcf/"
-  val OTHER_CHR_INDEX: Int = NGSSparkConf.getOtherChrIndex(conf)
 
   val dict: SAMSequenceDictionary = NGSSparkConf.getSequenceDictionary(conf)
   val header: SAMFileHeader = new SAMFileHeader()
@@ -50,44 +48,35 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
   def variantCallFirstHalf(unsortedSamRecords: Iterable[MySAMRecord]): (Int, String, String) = {
     Logger.INFOTIME("Processing chromosome region [first]: " + regionId)
 
-    implicit val samRecordOrdering: Ordering[MySAMRecord] = new Ordering[MySAMRecord] {
-      override def compare(x: MySAMRecord, y: MySAMRecord): Int = {
-        if (x.referenceIndex != y.referenceIndex) x.referenceIndex - y.referenceIndex
-        else {
-          if (x.startPos != y.startPos) {
-            x.startPos - y.startPos
-          } else {
-            if (x.originalStr > y.originalStr) 1 else -1
-          }
-        }
-      }
-    }
     val samRecordsListOne = unsortedSamRecords.filter(_.RGID == readGroupIdSet(0)).toArray
     val samRecordsListTwo = unsortedSamRecords.filter(_.RGID == readGroupIdSet(1)).toArray
 
-    writeUnSortedBamFile(NGSSparkConf.getReadGroup(conf, readGroupIdSet(0)), samRecordsListOne)
-    writeUnSortedBamFile(NGSSparkConf.getReadGroup(conf, readGroupIdSet(1)), samRecordsListTwo)
-
-    scala.util.Sorting.quickSort(samRecordsListOne)
-    scala.util.Sorting.quickSort(samRecordsListTwo)
+    Logger.INFOTIME("##### Filter case and normal reads end #####")
 
     // Write the sorted sam records to disk in bam format
     val sortedBamFileOne = writeSortedBamFile(NGSSparkConf.getReadGroup(conf, readGroupIdSet(0)), samRecordsListOne)
     val sortedBamFileTwo = writeSortedBamFile(NGSSparkConf.getReadGroup(conf, readGroupIdSet(1)), samRecordsListTwo)
 
+    Logger.INFOTIME("##### Write sort bam file end #####")
+
     // Mark duplicates of the sorted bam file
     val markDuplicatesBamFileOne = markDuplicates(NGSSparkConf.getReadGroup(conf, readGroupIdSet(0)), sortedBamFileOne)
     val markDuplicatesBamFileTwo = markDuplicates(NGSSparkConf.getReadGroup(conf, readGroupIdSet(1)), sortedBamFileTwo)
+
+    Logger.INFOTIME("##### MarkDuplicates end #####")
 
     // Run indelRealignment
     val indelRealignmentOutSet = indelRealignment(markDuplicatesBamFileOne, markDuplicatesBamFileTwo)
     val indelRealignmentBamFileOne = indelRealignmentOutSet._1
     val indelRealignmentBamFileTwo = indelRealignmentOutSet._2
 
+    Logger.INFOTIME("##### IndelRealignment end #####")
+
     // Run baseRecalibrator
     baseRecalibrator(NGSSparkConf.getReadGroup(conf, readGroupIdSet(0)), indelRealignmentBamFileOne)
     baseRecalibrator(NGSSparkConf.getReadGroup(conf, readGroupIdSet(1)), indelRealignmentBamFileTwo)
 
+    Logger.INFOTIME("##### BaseRecalibrator end #####")
     (regionId, indelRealignmentOutSet._3, indelRealignmentOutSet._4)
   }
 
@@ -138,6 +127,8 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     NGSSparkFileUtils.downloadFileFromHdfs(inputTableOne, localInputTableOne, delete = false)
     NGSSparkFileUtils.downloadFileFromHdfs(inputTableTwo, localInputTableTwo, delete = false)
 
+    Logger.INFOTIME("##### Download bam file from HDFS end #####")
+
     tools.runBuildBamIndexPicard(localInputBamFileOne)
     tools.runBuildBamIndexPicard(localInputBamFileTwo)
 
@@ -145,8 +136,12 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     val printReadsFileOne = printReads(NGSSparkConf.getReadGroup(conf, readGroupIdSet(0)), localInputBamFileOne, localInputTableOne)
     val printReadsFileTwo = printReads(NGSSparkConf.getReadGroup(conf, readGroupIdSet(1)), localInputBamFileTwo, localInputTableTwo)
 
+    Logger.INFOTIME("##### PrintReads end #####")
+
     // Run mutect2
     val vcfOutputFile = mutect2(printReadsFileOne, printReadsFileTwo)
+
+    Logger.INFOTIME("##### Mutect2 end #####")
 
     if (new File(vcfOutputFile).exists()) {
       writeVCFOutputFile(vcfOutputFile)
@@ -156,19 +151,6 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
   def wholeGenomeVariantCall(unsortedSamRecords: Iterable[MySAMRecord]): Unit = {
     Logger.INFOTIME("Processing chromosome region [whole genome]: " + regionId)
 
-    // Sorting
-    implicit val samRecordOrdering: Ordering[MySAMRecord] = new Ordering[MySAMRecord] {
-      override def compare(x: MySAMRecord, y: MySAMRecord): Int = {
-        if (x.referenceIndex != y.referenceIndex) x.referenceIndex - y.referenceIndex
-        else {
-          if (x.startPos != y.startPos) {
-            x.startPos - y.startPos
-          } else {
-            if (x.originalStr > y.originalStr) 1 else -1
-          }
-        }
-      }
-    }
     val samRecordsListOne = unsortedSamRecords.filter(_.RGID == readGroupIdSet(0)).toArray
     val samRecordsListTwo = unsortedSamRecords.filter(_.RGID == readGroupIdSet(1)).toArray
 
@@ -312,7 +294,7 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     val parser: SAMLineParser = new SAMLineParser(samRecordFactory, validationStringency, outHeader, null, null)
 
     for (mySamRecord <- sortedSamRecords) {
-      val sam = parser.parseLine(mySamRecord.originalStr)
+      val sam = parser.parseLine(new String(mySamRecord.originalStrByteArr))
       writer.addAlignment(sam)
     }
 
@@ -340,8 +322,8 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
       val read2Ref = sam.getMateReferenceIndex
       if (!sam.getReadUnmappedFlag &&
         (read1Ref >= 0 || read2Ref >= 0)) {
-        val chr = if (referenceIndex >= 0 && referenceIndex < NGSSparkConf.getChromosomeNum(conf)) referenceIndex + 1 else OTHER_CHR_INDEX
-        samRecordList = (chr, new MySAMRecord(sam, itr, mateReference = true)) :: samRecordList
+        val chr = if (referenceIndex >= 0 && referenceIndex < ProgramVariable.CHR_NUM) referenceIndex + 1 else ProgramVariable.OTHER_CHR_INDEX
+        samRecordList = (chr, new MySAMRecord(sam, itr.getBytes, mateReference = true)) :: samRecordList
       }
     }
     samRecordList
@@ -364,7 +346,7 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
     val parser: SAMLineParser = new SAMLineParser(samRecordFactory, validationStringency, outHeader, null, null)
 
     for (mySamRecord <- sortedSamRecords) {
-      val sam = parser.parseLine(mySamRecord.originalStr)
+      val sam = parser.parseLine(new String(mySamRecord.originalStrByteArr))
       writer.addAlignment(sam)
     }
 
@@ -548,7 +530,7 @@ class VariantCalling(settings: Array[(String, String)], regionId: Int) {
 //      }
 
     val bed =
-      if (chrId <= 23) {
+      if (chrId <= 23 && chrId >= 0) {
         ChromosomeTools.chromosomeTools.getRefNameByRefIndex(chrId - 1)
       } else {
         "/home/spark/GATK/otherChr.list"
