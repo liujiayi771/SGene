@@ -1,12 +1,10 @@
-package edu.hust.elwg
-
 import java.io.File
 import java.net.URISyntaxException
 
-import edu.hust.elwg.tools._
-import edu.hust.elwg.utils.{Logger, NGSSparkConf, NGSSparkFileUtils}
+import utils.{Logger, NGSSparkConf, NGSSparkFileUtils}
 import htsjdk.samtools._
 import org.apache.spark.SparkConf
+import tools._
 
 import scala.io.Source
 

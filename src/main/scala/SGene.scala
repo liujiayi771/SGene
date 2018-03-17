@@ -1,19 +1,16 @@
-package edu.hust.elwg
-
-
 import java.io._
 
-import edu.hust.elwg.tools.{ChromosomeTools, MySAMRecord, PreprocessTools}
-import edu.hust.elwg.utils._
+import utils._
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.{HashPartitioner, SparkConf, SparkContext}
+import tools.{ChromosomeTools, MySAMRecord, PreprocessTools}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 
-object NGSSpark {
+object SGene {
 
   def main(args: Array[String]): Unit = {
     val conf: SparkConf = new SparkConf().setAppName("NGS-Spark")

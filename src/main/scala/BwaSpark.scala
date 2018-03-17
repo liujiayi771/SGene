@@ -1,12 +1,10 @@
-package edu.hust.elwg
+import java.io.{BufferedWriter, InputStream, OutputStreamWriter}
 
-import java.io.{BufferedWriter, ByteArrayInputStream, InputStream, OutputStreamWriter}
-
-import edu.hust.elwg.tools.{CommandGenerator, MySAMRecord}
-import edu.hust.elwg.utils.{Logger, NGSSparkConf, NGSSparkFileUtils, SystemShutdownHookRegister}
+import utils.{Logger, NGSSparkConf, NGSSparkFileUtils, SystemShutdownHookRegister}
 import htsjdk.samtools._
 import htsjdk.samtools.util.BufferedLineReader
 import org.apache.spark.SparkConf
+import tools.{CommandGenerator, MySAMRecord}
 
 import scala.sys.process._
 
