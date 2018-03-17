@@ -21,20 +21,20 @@ object SGene {
     CommandLine.parseParam(args, conf)
     val CHR_NUM = 24
     val OTHER_CHR_INDEX = 49
-    NGSSparkConf.setChromosomeNum(conf, CHR_NUM)
-    NGSSparkConf.setOtherChrIndex(conf, OTHER_CHR_INDEX)
+    SGeneConf.setChromosomeNum(conf, CHR_NUM)
+    SGeneConf.setOtherChrIndex(conf, OTHER_CHR_INDEX)
 
-    val partitionNum = NGSSparkConf.getPartitionNum(conf)
-    val inputDirs = NGSSparkConf.getInput(conf)
-    val outputPrefix = NGSSparkConf.getOutput(conf)
-    val localTmp = NGSSparkConf.getLocalTmp(conf)
-    val hdfsTmp = NGSSparkConf.getHdfsTmp(conf)
-    val bin = NGSSparkConf.getBin(conf)
-    val readGroupIdSet = NGSSparkConf.getReadGroupId(conf)
+    val partitionNum = SGeneConf.getPartitionNum(conf)
+    val inputDirs = SGeneConf.getInput(conf)
+    val outputPrefix = SGeneConf.getOutput(conf)
+    val localTmp = SGeneConf.getLocalTmp(conf)
+    val hdfsTmp = SGeneConf.getHdfsTmp(conf)
+    val bin = SGeneConf.getBin(conf)
+    val readGroupIdSet = SGeneConf.getReadGroupId(conf)
     val BASE_RECALIBRATOR_TABLE: String = hdfsTmp + "base_recalibrator_table/"
     val TABLE: String = hdfsTmp + "table/"
     val MUTECT2_DIR: String = hdfsTmp + "vcf/"
-    val chrTools = ChromosomeTools(NGSSparkConf.getSequenceDictionary(conf))
+    val chrTools = ChromosomeTools(SGeneConf.getSequenceDictionary(conf))
 
     /*
     val desFile = System.getenv("SPARK_HOME") + "/data/timestamp"
@@ -48,10 +48,10 @@ object SGene {
     val workerNum: Int = sc.getConf.get("spark.cores.max").toInt
     val worker: RDD[Int] = sc.parallelize(Range(0, workerNum), workerNum)
     worker.map(_ => {
-      NGSSparkFileUtils.mkLocalDir(localTmp, delete = true)
+      SGeneFileUtils.mkLocalDir(localTmp, delete = true)
     }).count()
-    NGSSparkFileUtils.mkLocalDir(localTmp, delete = true)
-    NGSSparkFileUtils.mkHdfsDir(hdfsTmp, delete = true)
+    SGeneFileUtils.mkLocalDir(localTmp, delete = true)
+    SGeneFileUtils.mkHdfsDir(hdfsTmp, delete = true)
 
     parseTargetBed(conf)
     val confBC: Broadcast[Array[(String, String)]] = sc.broadcast(conf.getAll)
@@ -89,7 +89,7 @@ object SGene {
     val chrInfo: Map[Int, (Int, Int)] = chrToNumSamRecs.map(record => {
       val conf: SparkConf = new SparkConf()
       conf.setAll(confBC.value)
-      (record._1, (record._2, ChromosomeTools(NGSSparkConf.getSequenceDictionary(conf)).chrLen(record._1)))
+      (record._1, (record._2, ChromosomeTools(SGeneConf.getSequenceDictionary(conf)).chrLen(record._1)))
     }).collect.toMap
 
     /*
@@ -127,7 +127,7 @@ object SGene {
 
     /** Download table file **/
     val localTableDir = localTmp + BASE_RECALIBRATOR_TABLE.split("/").last
-    NGSSparkFileUtils.downloadDirFromHdfs(BASE_RECALIBRATOR_TABLE, localTableDir)
+    SGeneFileUtils.downloadDirFromHdfs(BASE_RECALIBRATOR_TABLE, localTableDir)
     val tableFile = new File(localTableDir)
     val oneFile = tableFile.listFiles().map(_.getAbsolutePath).filter(name => name.endsWith(".table") && name.contains(readGroupIdSet(0)))
     val twoFile = tableFile.listFiles().map(_.getAbsolutePath).filter(name => name.endsWith(".table") && name.contains(readGroupIdSet(1)))
@@ -137,8 +137,8 @@ object SGene {
     val hdfsTwoOutputTableFile = TABLE + twoOutputTableFile.split("/").last
     MergeTables.mergeTable(oneFile, twoFile, oneOutputTableFile, twoOutputTableFile)
 
-    NGSSparkFileUtils.uploadFileToHdfs(oneOutputTableFile, hdfsOneOutputTableFile)
-    NGSSparkFileUtils.uploadFileToHdfs(twoOutputTableFile, hdfsTwoOutputTableFile)
+    SGeneFileUtils.uploadFileToHdfs(oneOutputTableFile, hdfsOneOutputTableFile)
+    SGeneFileUtils.uploadFileToHdfs(twoOutputTableFile, hdfsTwoOutputTableFile)
 
     Logger.INFOTIME("##### Second half start #####")
 
@@ -157,7 +157,7 @@ object SGene {
 
     /** Download vcf files from HDFS **/
     val localVcfDir = localTmp + MUTECT2_DIR.split("/").last
-    NGSSparkFileUtils.downloadDirFromHdfs(MUTECT2_DIR, localVcfDir)
+    SGeneFileUtils.downloadDirFromHdfs(MUTECT2_DIR, localVcfDir)
     var vcfFiles = new File(localVcfDir).listFiles().map(_.getAbsolutePath).filter(_.endsWith(".vcf"))
 
     // Sort vcf files
@@ -192,7 +192,7 @@ object SGene {
 
     val data = sc.wholeTextFiles("/user/spark/sparkgatk_L001/print_reads_bam")
       .map(itr => (itr._1.split("/").last.split("-")(1).toInt, itr._1))
-    data.groupByKey(NGSSparkConf.getChromosomeNum(conf)).map(itr => {
+    data.groupByKey(SGeneConf.getChromosomeNum(conf)).map(itr => {
       var bamFileOne = ""
       var bamFileTwo = ""
       for (bam <- itr._2) {
@@ -210,15 +210,15 @@ object SGene {
     val conf = new SparkConf()
     conf.setAll(confBC.value)
 
-    val localTmp = NGSSparkConf.getLocalTmp(conf)
-    val hdfsTmp = NGSSparkConf.getHdfsTmp(conf)
-    val readGroupIdSet = NGSSparkConf.getReadGroupId(conf)
+    val localTmp = SGeneConf.getLocalTmp(conf)
+    val hdfsTmp = SGeneConf.getHdfsTmp(conf)
+    val readGroupIdSet = SGeneConf.getReadGroupId(conf)
     val BASE_RECALIBRATOR_TABLE: String = hdfsTmp + "base_recalibrator_table/"
     val TABLE: String = hdfsTmp + "table/"
 
     val data = sc.wholeTextFiles("/user/spark/sparkgatk_L001/mark_duplicates_bam")
       .map(itr => (itr._1.split("/").last.split("-")(1).toInt, itr._1))
-    val firstHalf = data.groupByKey(NGSSparkConf.getChromosomeNum(conf)).map(itr => {
+    val firstHalf = data.groupByKey(SGeneConf.getChromosomeNum(conf)).map(itr => {
       var bamFileOne = ""
       var bamFileTwo = ""
       for (bam <- itr._2) {
@@ -235,7 +235,7 @@ object SGene {
 
     /** Download table file **/
     val localTableDir = localTmp + BASE_RECALIBRATOR_TABLE.split("/").last
-    NGSSparkFileUtils.downloadDirFromHdfs(BASE_RECALIBRATOR_TABLE, localTableDir)
+    SGeneFileUtils.downloadDirFromHdfs(BASE_RECALIBRATOR_TABLE, localTableDir)
     val tableFile = new File(localTableDir)
     val oneFile = tableFile.listFiles().map(_.getAbsolutePath).filter(name => name.endsWith(".table") && name.contains(readGroupIdSet(0)))
     val twoFile = tableFile.listFiles().map(_.getAbsolutePath).filter(name => name.endsWith(".table") && name.contains(readGroupIdSet(1)))
@@ -245,8 +245,8 @@ object SGene {
     val hdfsTwoOutputTableFile = TABLE + twoOutputTableFile.split("/").last
     MergeTables.mergeTable(oneFile, twoFile, oneOutputTableFile, twoOutputTableFile)
 
-    NGSSparkFileUtils.uploadFileToHdfs(oneOutputTableFile, hdfsOneOutputTableFile)
-    NGSSparkFileUtils.uploadFileToHdfs(twoOutputTableFile, hdfsTwoOutputTableFile)
+    SGeneFileUtils.uploadFileToHdfs(oneOutputTableFile, hdfsOneOutputTableFile)
+    SGeneFileUtils.uploadFileToHdfs(twoOutputTableFile, hdfsTwoOutputTableFile)
 
     firstHalf.map(itr => {
       val vc = new VariantCalling(confBC.value, itr._1)
@@ -258,15 +258,15 @@ object SGene {
     val conf = new SparkConf()
     conf.setAll(confBC.value)
 
-    val localTmp = NGSSparkConf.getLocalTmp(conf)
-    val hdfsTmp = NGSSparkConf.getHdfsTmp(conf)
-    val readGroupIdSet = NGSSparkConf.getReadGroupId(conf)
+    val localTmp = SGeneConf.getLocalTmp(conf)
+    val hdfsTmp = SGeneConf.getHdfsTmp(conf)
+    val readGroupIdSet = SGeneConf.getReadGroupId(conf)
     val BASE_RECALIBRATOR_TABLE: String = hdfsTmp + "base_recalibrator_table/"
     val TABLE: String = hdfsTmp + "table/"
 
     val data = sc.wholeTextFiles("/user/spark/sparkgatk_L001/indel_realignment_bam")
       .map(itr => (itr._1.split("/").last.split("-")(1).toInt, itr._1))
-    val firstHalf = data.groupByKey(NGSSparkConf.getChromosomeNum(conf)).map(itr => {
+    val firstHalf = data.groupByKey(SGeneConf.getChromosomeNum(conf)).map(itr => {
       var bamFileOne = ""
       var bamFileTwo = ""
       for (bam <- itr._2) {
@@ -283,7 +283,7 @@ object SGene {
 
     /** Download table file **/
     val localTableDir = localTmp + BASE_RECALIBRATOR_TABLE.split("/").last
-    NGSSparkFileUtils.downloadDirFromHdfs(BASE_RECALIBRATOR_TABLE, localTableDir)
+    SGeneFileUtils.downloadDirFromHdfs(BASE_RECALIBRATOR_TABLE, localTableDir)
     val tableFile = new File(localTableDir)
     val oneFile = tableFile.listFiles().map(_.getAbsolutePath).filter(name => name.endsWith(".table") && name.contains(readGroupIdSet(0)))
     val twoFile = tableFile.listFiles().map(_.getAbsolutePath).filter(name => name.endsWith(".table") && name.contains(readGroupIdSet(1)))
@@ -293,8 +293,8 @@ object SGene {
     val hdfsTwoOutputTableFile = TABLE + twoOutputTableFile.split("/").last
     MergeTables.mergeTable(oneFile, twoFile, oneOutputTableFile, twoOutputTableFile)
 
-    NGSSparkFileUtils.uploadFileToHdfs(oneOutputTableFile, hdfsOneOutputTableFile)
-    NGSSparkFileUtils.uploadFileToHdfs(twoOutputTableFile, hdfsTwoOutputTableFile)
+    SGeneFileUtils.uploadFileToHdfs(oneOutputTableFile, hdfsOneOutputTableFile)
+    SGeneFileUtils.uploadFileToHdfs(twoOutputTableFile, hdfsTwoOutputTableFile)
 
     firstHalf.map(itr => {
       val vc = new VariantCalling(confBC.value, itr._1)
@@ -306,15 +306,15 @@ object SGene {
     val conf = new SparkConf()
     conf.setAll(confBC.value)
 
-    val localTmp = NGSSparkConf.getLocalTmp(conf)
-    val hdfsTmp = NGSSparkConf.getHdfsTmp(conf)
-    val readGroupIdSet = NGSSparkConf.getReadGroupId(conf)
+    val localTmp = SGeneConf.getLocalTmp(conf)
+    val hdfsTmp = SGeneConf.getHdfsTmp(conf)
+    val readGroupIdSet = SGeneConf.getReadGroupId(conf)
     val BASE_RECALIBRATOR_TABLE: String = hdfsTmp + "base_recalibrator_table/"
     val TABLE: String = hdfsTmp + "table/"
 
     val data = sc.wholeTextFiles("/user/spark/sparkgatk_L001/sort_bam")
       .map(itr => (itr._1.split("/").last.split("-")(1).toInt, itr._1))
-    val firstHalf = data.groupByKey(NGSSparkConf.getChromosomeNum(conf)).map(itr => {
+    val firstHalf = data.groupByKey(SGeneConf.getChromosomeNum(conf)).map(itr => {
       var bamFileOne = ""
       var bamFileTwo = ""
       for (bam <- itr._2) {
@@ -331,7 +331,7 @@ object SGene {
 
     /** Download table file **/
     val localTableDir = localTmp + BASE_RECALIBRATOR_TABLE.split("/").last
-    NGSSparkFileUtils.downloadDirFromHdfs(BASE_RECALIBRATOR_TABLE, localTableDir)
+    SGeneFileUtils.downloadDirFromHdfs(BASE_RECALIBRATOR_TABLE, localTableDir)
     val tableFile = new File(localTableDir)
     val oneFile = tableFile.listFiles().map(_.getAbsolutePath).filter(name => name.endsWith(".table") && name.contains(readGroupIdSet(0)))
     val twoFile = tableFile.listFiles().map(_.getAbsolutePath).filter(name => name.endsWith(".table") && name.contains(readGroupIdSet(1)))
@@ -341,8 +341,8 @@ object SGene {
     val hdfsTwoOutputTableFile = TABLE + twoOutputTableFile.split("/").last
     MergeTables.mergeTable(oneFile, twoFile, oneOutputTableFile, twoOutputTableFile)
 
-    NGSSparkFileUtils.uploadFileToHdfs(oneOutputTableFile, hdfsOneOutputTableFile)
-    NGSSparkFileUtils.uploadFileToHdfs(twoOutputTableFile, hdfsTwoOutputTableFile)
+    SGeneFileUtils.uploadFileToHdfs(oneOutputTableFile, hdfsOneOutputTableFile)
+    SGeneFileUtils.uploadFileToHdfs(twoOutputTableFile, hdfsTwoOutputTableFile)
 
     firstHalf.map(itr => {
       val vc = new VariantCalling(confBC.value, itr._1)
@@ -405,16 +405,16 @@ object SGene {
   }
 
   def parseTargetBed(conf: SparkConf): Unit = {
-    val bedFile = NGSSparkConf.getBedFile(conf)
+    val bedFile = SGeneConf.getBedFile(conf)
     if (bedFile != "") {
-      val chrTool = ChromosomeTools(NGSSparkConf.getSequenceDictionary(conf))
-      val hdfsTargetBedPath = NGSSparkConf.getHdfsTmp(conf) + "targetBed/"
-      NGSSparkFileUtils.mkHdfsDir(hdfsTargetBedPath, delete = true)
+      val chrTool = ChromosomeTools(SGeneConf.getSequenceDictionary(conf))
+      val hdfsTargetBedPath = SGeneConf.getHdfsTmp(conf) + "targetBed/"
+      SGeneFileUtils.mkHdfsDir(hdfsTargetBedPath, delete = true)
       val lines = Source.fromFile(bedFile).getLines
       val groupLines = lines.toList.groupBy(_.split("\\s+").head)
       for (index <- groupLines) {
-        NGSSparkConf.setTargetBedChr(conf, chrTool.getRefIndexByRefName(index._1) + 1)
-        val localBedFile = NGSSparkConf.getLocalTmp(conf) + (chrTool.getRefIndexByRefName(index._1) + 1) + ".bed"
+        SGeneConf.setTargetBedChr(conf, chrTool.getRefIndexByRefName(index._1) + 1)
+        val localBedFile = SGeneConf.getLocalTmp(conf) + (chrTool.getRefIndexByRefName(index._1) + 1) + ".bed"
         val hdfsBedFile = hdfsTargetBedPath + localBedFile.split("/").last
         val f = new File(localBedFile)
         val out = new BufferedWriter(new FileWriter(f))
@@ -422,13 +422,13 @@ object SGene {
           out.write(line + "\n")
         }
         out.close()
-        NGSSparkFileUtils.uploadFileToHdfs(localBedFile, hdfsBedFile)
-        NGSSparkFileUtils.deleteLocalFile(localBedFile, keep = false)
+        SGeneFileUtils.uploadFileToHdfs(localBedFile, hdfsBedFile)
+        SGeneFileUtils.deleteLocalFile(localBedFile, keep = false)
       }
-      val f = new File(NGSSparkConf.getLocalTmp(conf) + "empty.bed")
+      val f = new File(SGeneConf.getLocalTmp(conf) + "empty.bed")
       f.createNewFile()
-      NGSSparkFileUtils.uploadFileToHdfs(f.getAbsolutePath, hdfsTargetBedPath + f.getName)
-      NGSSparkFileUtils.deleteLocalFile(f.getAbsolutePath, keep = false)
+      SGeneFileUtils.uploadFileToHdfs(f.getAbsolutePath, hdfsTargetBedPath + f.getName)
+      SGeneFileUtils.deleteLocalFile(f.getAbsolutePath, keep = false)
       f.deleteOnExit()
     }
   }

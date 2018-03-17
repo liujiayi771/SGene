@@ -2,14 +2,14 @@ package tools
 
 import java.text.DecimalFormat
 
-import utils.{Logger, NGSSparkConf, SystemShutdownHookRegister}
+import utils.{Logger, SGeneConf, SystemShutdownHookRegister}
 import org.apache.spark.SparkConf
 
 import scala.collection.mutable.ArrayBuffer
 import scala.sys.process._
 
 class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
-  val readGroupIdSet: Array[String] = NGSSparkConf.getReadGroupId(conf)
+  val readGroupIdSet: Array[String] = SGeneConf.getReadGroupId(conf)
   val java: ArrayBuffer[String] = ArrayBuffer("java")
   val mem: String = "-Xmx2g"
   val gatk: String = if (bin.endsWith("/")) bin + "gatk-package-distribution-3.6.jar" else bin + "/" + "gatk-package-distribution-3.6.jar"
@@ -40,7 +40,7 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
       * -o forIndelRealigner.intervals
       */
     val command: ArrayBuffer[String] = ArrayBuffer.empty
-    val javaCustomArgs: String = NGSSparkConf.getCustomArgs(conf, "java", "realignertargetcreator")
+    val javaCustomArgs: String = SGeneConf.getCustomArgs(conf, "java", "realignertargetcreator")
     command ++= java
     command += javaCustomArgs
     command += "-jar"
@@ -49,7 +49,7 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
     command += ("-R " + ref)
     command += ("-I " + input)
     command += ("-o " + targets)
-    val customArgs: String = NGSSparkConf.getCustomArgs(conf, "gatk", "realignertargetcreator")
+    val customArgs: String = SGeneConf.getCustomArgs(conf, "gatk", "realignertargetcreator")
     val realignerTargetCreatorCmd = CommandGenerator.addToCommand(command.toArray, customArgs)
     Logger.INFOTIME(realignerTargetCreatorCmd.mkString(" "))
     val process = realignerTargetCreatorCmd.mkString(" ").run
@@ -80,7 +80,7 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
       * -o forIndelRealigner.intervals
       */
     val command: ArrayBuffer[String] = ArrayBuffer.empty
-    val javaCustomArgs: String = NGSSparkConf.getCustomArgs(conf, "java", "realignertargetcreator")
+    val javaCustomArgs: String = SGeneConf.getCustomArgs(conf, "java", "realignertargetcreator")
     command ++= java
     command += javaCustomArgs
     command += "-jar"
@@ -91,7 +91,7 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
     command += ("-I " + inputTwo)
     command += ("-o " + targets)
     if (bed != "" && bed != null) command += ("-L " + bed)
-    val customArgs: String = NGSSparkConf.getCustomArgs(conf, "gatk", "realignertargetcreator")
+    val customArgs: String = SGeneConf.getCustomArgs(conf, "gatk", "realignertargetcreator")
     val realignerTargetCreatorCmd = CommandGenerator.addToCommand(command.toArray, customArgs)
     Logger.INFOTIME(realignerTargetCreatorCmd.mkString(" "))
     val process = realignerTargetCreatorCmd.mkString(" ").run
@@ -126,7 +126,7 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
       *
       */
     val command: ArrayBuffer[String] = ArrayBuffer.empty
-    val javaCustomArgs: String = NGSSparkConf.getCustomArgs(conf, "java", "indelrealigner")
+    val javaCustomArgs: String = SGeneConf.getCustomArgs(conf, "java", "indelrealigner")
     command ++= java
     command += javaCustomArgs
     command += "-jar"
@@ -136,7 +136,7 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
     command += ("-I " + input)
     command += ("-targetIntervals " + targets)
     command += ("-o " + output)
-    val customArgs: String = NGSSparkConf.getCustomArgs(conf, "gatk", "indelrealigner")
+    val customArgs: String = SGeneConf.getCustomArgs(conf, "gatk", "indelrealigner")
     val indelRealignerCmd = CommandGenerator.addToCommand(command.toArray, customArgs)
     Logger.INFOTIME(indelRealignerCmd.mkString(" "))
     val process = indelRealignerCmd.mkString(" ").run
@@ -172,7 +172,7 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
       *
       */
     val command: ArrayBuffer[String] = ArrayBuffer.empty
-    val javaCustomArgs: String = NGSSparkConf.getCustomArgs(conf, "java", "indelrealigner")
+    val javaCustomArgs: String = SGeneConf.getCustomArgs(conf, "java", "indelrealigner")
     command ++= java
     command += javaCustomArgs
     command += "-jar"
@@ -183,7 +183,7 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
     command += ("-I " + inputTwo)
     command += ("-targetIntervals " + targets)
     command += ("--nWayOut " + nWayOut)
-    val customArgs: String = NGSSparkConf.getCustomArgs(conf, "gatk", "indelrealigner")
+    val customArgs: String = SGeneConf.getCustomArgs(conf, "gatk", "indelrealigner")
     val indelRealignerCmd = CommandGenerator.addToCommand(command.toArray, customArgs)
     Logger.INFOTIME(indelRealignerCmd.mkString(" "))
     val process = indelRealignerCmd.mkString(" ").run
@@ -213,7 +213,7 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
       * -o recal_data.table
       */
     val command: ArrayBuffer[String] = ArrayBuffer.empty
-    val javaCustomArgs: String = NGSSparkConf.getCustomArgs(conf, "java", "baserecalibrator")
+    val javaCustomArgs: String = SGeneConf.getCustomArgs(conf, "java", "baserecalibrator")
     command ++= java
     command += javaCustomArgs
     command += "-jar"
@@ -224,7 +224,7 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
     command += ("-o " + table)
     if (bed != "" && bed != null) command += ("-L " + bed)
     command += "--disable_auto_index_creation_and_locking_when_reading_rods"
-    val customArgs: String = NGSSparkConf.getCustomArgs(conf, "gatk", "baserecalibrator")
+    val customArgs: String = SGeneConf.getCustomArgs(conf, "gatk", "baserecalibrator")
     val baseRecalibratorCmd = CommandGenerator.addToCommand(command.toArray, customArgs)
     Logger.INFOTIME(baseRecalibratorCmd.mkString(" "))
     val process = baseRecalibratorCmd.mkString(" ").run
@@ -248,7 +248,7 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
       * -BQSR table.grp
       */
     val command: ArrayBuffer[String] = ArrayBuffer.empty
-    val javaCustomArgs: String = NGSSparkConf.getCustomArgs(conf, "java", "printreads")
+    val javaCustomArgs: String = SGeneConf.getCustomArgs(conf, "java", "printreads")
     command ++= java
     command += javaCustomArgs
     command += "-jar"
@@ -258,7 +258,7 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
     command += ("-I " + input)
     command += ("-o " + output)
     command += ("-BQSR " + table)
-    val customArgs: String = NGSSparkConf.getCustomArgs(conf, "gatk", "printreads")
+    val customArgs: String = SGeneConf.getCustomArgs(conf, "gatk", "printreads")
     val printReadsCmd = CommandGenerator.addToCommand(command.toArray, customArgs)
     Logger.INFOTIME(printReadsCmd.mkString(" "))
     val process = printReadsCmd.mkString(" ").run
@@ -293,7 +293,7 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
     val tumorFile = if (readGroupIdSet(0) == "tumor" || readGroupIdSet(0) == "case") inputOne else inputTwo
 
     val command: ArrayBuffer[String] = ArrayBuffer.empty
-    val javaCustomArgs: String = NGSSparkConf.getCustomArgs(conf, "java", "mutect2")
+    val javaCustomArgs: String = SGeneConf.getCustomArgs(conf, "java", "mutect2")
     command ++= java
     command += javaCustomArgs
     command += "-jar"
@@ -304,7 +304,7 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
     command += ("-I:normal " + normalFile)
     command += ("-o " + output)
     if (bed != "" && bed != null) command += ("-L " + bed)
-    val customArgs: String = NGSSparkConf.getCustomArgs(conf, "gatk", "mutect2")
+    val customArgs: String = SGeneConf.getCustomArgs(conf, "gatk", "mutect2")
     val mutect2Cmd = CommandGenerator.addToCommand(command.toArray, customArgs)
     Logger.INFOTIME(mutect2Cmd.mkString(" "))
     val process = mutect2Cmd.mkString(" ").run
@@ -331,7 +331,7 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
       * -R ref \
       */
     val command: ArrayBuffer[String] = ArrayBuffer.empty
-    val javaCustomArgs: String = NGSSparkConf.getCustomArgs(conf, "java", "variantcaller")
+    val javaCustomArgs: String = SGeneConf.getCustomArgs(conf, "java", "variantcaller")
     command ++= java
     command += javaCustomArgs
     command += "-jar"
@@ -344,7 +344,7 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
     command += ("-stand_emit_conf " + roundOneDecimal(sec))
     command += "--no_cmdline_in_header"
     command += "--disable_auto_index_creation_and_locking_when_reading_rods"
-    val customArgs: String = NGSSparkConf.getCustomArgs(conf, "gatk", "variantcaller")
+    val customArgs: String = SGeneConf.getCustomArgs(conf, "gatk", "variantcaller")
     val haplotypeCallerCmd = CommandGenerator.addToCommand(command.toArray, customArgs)
     Logger.INFOTIME(haplotypeCallerCmd.mkString(" "))
     val process = haplotypeCallerCmd.mkString(" ").run
@@ -366,7 +366,7 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
       * -genotypeMergeOptions UNIQUIFY
       */
     val command: ArrayBuffer[String] = ArrayBuffer.empty
-    val javaCustomArgs: String = NGSSparkConf.getCustomArgs(conf, "java", "combinevariants")
+    val javaCustomArgs: String = SGeneConf.getCustomArgs(conf, "java", "combinevariants")
     command ++= java
     command += javaCustomArgs
     command += "-jar"
@@ -383,7 +383,7 @@ class GATKTools(val reference: String, val bin: String, conf: SparkConf) {
         command += ("--variant " + in)
       }
     }
-    val customArgs: String = NGSSparkConf.getCustomArgs(conf, "gatk", "combinevariants")
+    val customArgs: String = SGeneConf.getCustomArgs(conf, "gatk", "combinevariants")
     val combineVariantsCmd = CommandGenerator.addToCommand(command.toArray, customArgs)
     Logger.INFOTIME(combineVariantsCmd.mkString(" "))
     val process = combineVariantsCmd.mkString(" ").run

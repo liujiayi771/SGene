@@ -1,6 +1,6 @@
 import java.io.{BufferedWriter, InputStream, OutputStreamWriter}
 
-import utils.{Logger, NGSSparkConf, NGSSparkFileUtils, SystemShutdownHookRegister}
+import utils.{Logger, SGeneConf, SGeneFileUtils, SystemShutdownHookRegister}
 import htsjdk.samtools._
 import htsjdk.samtools.util.BufferedLineReader
 import org.apache.spark.SparkConf
@@ -13,25 +13,25 @@ class BwaSpark(settings: Array[(String, String)]) {
   val conf = new SparkConf()
   conf.setAll(settings)
 
-  val OTHER_CHR_INDEX: Int = NGSSparkConf.getOtherChrIndex(conf)
+  val OTHER_CHR_INDEX: Int = SGeneConf.getOtherChrIndex(conf)
 
-  val bin: String = NGSSparkConf.getBin(conf)
-  val index: String = NGSSparkConf.getIndex(conf)
-  val localTmp: String = NGSSparkConf.getLocalTmp(conf)
-  val BWAThreads: Int = NGSSparkConf.getBWAThreads(conf)
-  val keepChrSplitPairs: Boolean = NGSSparkConf.getKeepChrSplitPairs(conf)
-  val readGroupIdSet: Array[String] = NGSSparkConf.getReadGroupId(conf)
-  val useLocalCProgram: Boolean = NGSSparkConf.getUseLocalCProgram(conf)
-  val customArgs: String = NGSSparkConf.getCustomArgs(conf, "bwa", "")
+  val bin: String = SGeneConf.getBin(conf)
+  val index: String = SGeneConf.getIndex(conf)
+  val localTmp: String = SGeneConf.getLocalTmp(conf)
+  val BWAThreads: Int = SGeneConf.getBWAThreads(conf)
+  val keepChrSplitPairs: Boolean = SGeneConf.getKeepChrSplitPairs(conf)
+  val readGroupIdSet: Array[String] = SGeneConf.getReadGroupId(conf)
+  val useLocalCProgram: Boolean = SGeneConf.getUseLocalCProgram(conf)
+  val customArgs: String = SGeneConf.getCustomArgs(conf, "bwa", "")
 
   if (readGroupIdSet.isEmpty || readGroupIdSet.length > 2) throw new Exception("Please specify one or two read group information")
 
   def runBwaDownloadFile(fileName: String): List[(Int, MySAMRecord)] = {
     val readGroupId = if (fileName.contains(readGroupIdSet(0))) readGroupIdSet(0) else readGroupIdSet(1)
     val downloadChunkFile = localTmp + readGroupId + "-" + fileName.split("/").last
-    val readGroup = NGSSparkConf.getReadGroup(conf, readGroupId).getBwaReadGroup()
+    val readGroup = SGeneConf.getReadGroup(conf, readGroupId).getBwaReadGroup()
 
-    NGSSparkFileUtils.downloadFileFromHdfs(fileName, downloadChunkFile)
+    SGeneFileUtils.downloadFileFromHdfs(fileName, downloadChunkFile)
     val cmd = CommandGenerator.bwaMem(bin, index, downloadChunkFile, null, isPaired = true, useSTDIN = false, BWAThreads, readGroup, useLocalCProgram, customArgs).mkString(" ")
     //Logger.INFOTIME("Run command: " + cmd)
 
@@ -60,13 +60,13 @@ class BwaSpark(settings: Array[(String, String)]) {
       }
     )
     process.exitValue
-    NGSSparkFileUtils.deleteLocalFile(downloadChunkFile, keep = false)
+    SGeneFileUtils.deleteLocalFile(downloadChunkFile, keep = false)
     samRecordList
   }
 
   def runBwaStdin(fileName: String, input: String): List[(Int, MySAMRecord)] = {
     val readGroupId = if (fileName.contains(readGroupIdSet(0))) readGroupIdSet(0) else readGroupIdSet(1)
-    val readGroup = NGSSparkConf.getReadGroup(conf, readGroupId).getBwaReadGroup()
+    val readGroup = SGeneConf.getReadGroup(conf, readGroupId).getBwaReadGroup()
 
     val cmd = CommandGenerator.bwaMem(bin, index, null, null, isPaired = true, useSTDIN = true, BWAThreads, readGroup, useLocalCProgram, customArgs).mkString(" ")
     Logger.INFOTIME("Run command: " + cmd)
@@ -121,7 +121,7 @@ class BwaSpark(settings: Array[(String, String)]) {
         (read1Ref == read2Ref || keepChrSplitPairs) &&
         (read1Ref >= 0 || read2Ref >= 0)) {
         if (read1Ref >= 0) {
-          val chr = if (read1Ref < NGSSparkConf.getChromosomeNum(conf)) read1Ref + 1 else OTHER_CHR_INDEX
+          val chr = if (read1Ref < SGeneConf.getChromosomeNum(conf)) read1Ref + 1 else OTHER_CHR_INDEX
           samRecordList = (chr, new MySAMRecord(samRecord, mCurrentLine, mateReference = false)) :: samRecordList
         }
 

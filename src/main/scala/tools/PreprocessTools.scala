@@ -1,14 +1,14 @@
 package tools
 
 import org.apache.spark.SparkConf
-import utils.{NGSSparkConf, SystemShutdownHookRegister}
+import utils.{SGeneConf, SystemShutdownHookRegister}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.sys.process._
 
 class PreprocessTools(val bin: String, conf: SparkConf) {
   val java: ArrayBuffer[String] = ArrayBuffer("java")
-  val javaCustomArgs: String = NGSSparkConf.getCustomArgs(conf, "java", "")
+  val javaCustomArgs: String = SGeneConf.getCustomArgs(conf, "java", "")
   if (javaCustomArgs != "") {
     java += javaCustomArgs
   }
@@ -35,13 +35,13 @@ class PreprocessTools(val bin: String, conf: SparkConf) {
   }
 
   def runBuildBamIndexSamtools(input: String): Unit = {
-    val useLocalCProgram: Boolean = NGSSparkConf.getUseLocalCProgram(conf)
+    val useLocalCProgram: Boolean = SGeneConf.getUseLocalCProgram(conf)
     val tool: String = if (bin.endsWith("/")) bin + "samtools" else bin + "/" + "samtools"
     val command: ArrayBuffer[String] = ArrayBuffer.empty
     if (useLocalCProgram) command += "samtools" else command += tool
     command += "index"
     command += input
-    val customArgs: String = NGSSparkConf.getCustomArgs(conf, "samtools", "index")
+    val customArgs: String = SGeneConf.getCustomArgs(conf, "samtools", "index")
     val samtoolsBuildBamIndexCmd: Array[String] = CommandGenerator.addToCommand(command.toArray, customArgs)
     val process = samtoolsBuildBamIndexCmd.mkString(" ").run
     SystemShutdownHookRegister.register(
@@ -53,7 +53,7 @@ class PreprocessTools(val bin: String, conf: SparkConf) {
   }
 
   def runMergeBamFileSamtools(inputs: Array[String], output: String): Unit = {
-    val useLocalCProgram: Boolean = NGSSparkConf.getUseLocalCProgram(conf)
+    val useLocalCProgram: Boolean = SGeneConf.getUseLocalCProgram(conf)
     val tool: String = if (bin.endsWith("/")) bin + "samtools" else bin + "/" + "samtools"
     val command: ArrayBuffer[String] = ArrayBuffer.empty
     if (useLocalCProgram) command += "samtools" else command += tool
@@ -62,7 +62,7 @@ class PreprocessTools(val bin: String, conf: SparkConf) {
     for (input <- inputs) {
       command += input
     }
-    val customArgs: String = NGSSparkConf.getCustomArgs(conf, "samtools", "merge")
+    val customArgs: String = SGeneConf.getCustomArgs(conf, "samtools", "merge")
     val samtoolsMergeBamFileCmd: Array[String] = CommandGenerator.addToCommand(command.toArray, customArgs)
     val process = samtoolsMergeBamFileCmd.mkString(" ").run
     SystemShutdownHookRegister.register(
@@ -84,13 +84,13 @@ class PreprocessTools(val bin: String, conf: SparkConf) {
   def runBuildBamIndexPicard(input: String): Unit = {
     val tool: String = if (bin.endsWith("/")) bin + PicardTools(0) else bin + "/" + PicardTools(0)
     val command: ArrayBuffer[String] = ArrayBuffer.empty
-    val javaCustomArgs: String = NGSSparkConf.getCustomArgs(conf, "java", "buildbamindex")
+    val javaCustomArgs: String = SGeneConf.getCustomArgs(conf, "java", "buildbamindex")
     command ++= java
     command += javaCustomArgs
     command += "-jar"
     command += tool
     command += ("INPUT=" + input)
-    val customArgs: String = NGSSparkConf.getCustomArgs(conf, "picard", "buildbamindex")
+    val customArgs: String = SGeneConf.getCustomArgs(conf, "picard", "buildbamindex")
     val picardBuildBamIndexCmd: Array[String] = CommandGenerator.addToCommand(command.toArray, customArgs)
     val process = picardBuildBamIndexCmd.mkString(" ").run
     SystemShutdownHookRegister.register(
@@ -105,7 +105,7 @@ class PreprocessTools(val bin: String, conf: SparkConf) {
   def runMarkDuplicates(input: String, output: String, metrics: String): Unit = {
     val tool: String = if (bin.endsWith("/")) bin + PicardTools(4) else bin + "/" + PicardTools(4)
     val command: ArrayBuffer[String] = ArrayBuffer.empty
-    val javaCustomArgs: String = NGSSparkConf.getCustomArgs(conf, "java", "markduplicates")
+    val javaCustomArgs: String = SGeneConf.getCustomArgs(conf, "java", "markduplicates")
     command ++= java
     command += javaCustomArgs
     command += "-jar"
@@ -114,7 +114,7 @@ class PreprocessTools(val bin: String, conf: SparkConf) {
     command += ("INPUT=" + input)
     command += ("OUTPUT=" + output)
     command += ("METRICS_FILE=" + metrics)
-    val customArgs: String = NGSSparkConf.getCustomArgs(conf, "picard", "markduplicates")
+    val customArgs: String = SGeneConf.getCustomArgs(conf, "picard", "markduplicates")
     val picardMarkduplicatesCmd: Array[String] = CommandGenerator.addToCommand(command.toArray, customArgs)
     val process = picardMarkduplicatesCmd.mkString(" ").run
     SystemShutdownHookRegister.register(
@@ -129,7 +129,7 @@ class PreprocessTools(val bin: String, conf: SparkConf) {
   def runSortVcf(inputs: Array[String], output: String): Unit = {
     val tool: String = if (bin.endsWith("/")) bin + PicardTools(4) else bin + "/" + PicardTools(4)
     val command: ArrayBuffer[String] = ArrayBuffer.empty
-    val javaCustomArgs: String = NGSSparkConf.getCustomArgs(conf, "java", "sortvcf")
+    val javaCustomArgs: String = SGeneConf.getCustomArgs(conf, "java", "sortvcf")
     command ++= java
     command += javaCustomArgs
     command += "-jar"
@@ -139,7 +139,7 @@ class PreprocessTools(val bin: String, conf: SparkConf) {
       command += ("I=" + input)
     }
     command += ("O=" + output)
-    val customArgs: String = NGSSparkConf.getCustomArgs(conf, "picard", "sortvcf")
+    val customArgs: String = SGeneConf.getCustomArgs(conf, "picard", "sortvcf")
     val picardVcfSortCmd: Array[String] = CommandGenerator.addToCommand(command.toArray, customArgs)
     val process = picardVcfSortCmd.mkString(" ").run
     SystemShutdownHookRegister.register(
@@ -152,7 +152,7 @@ class PreprocessTools(val bin: String, conf: SparkConf) {
   }
 
   def runSortBamSamtools(input: String, output: String, threads: Int): Unit = {
-    val useLocalCProgram: Boolean = NGSSparkConf.getUseLocalCProgram(conf)
+    val useLocalCProgram: Boolean = SGeneConf.getUseLocalCProgram(conf)
     val tool: String = if (bin.endsWith("/")) bin + "samtools" else bin + "/" + "samtools"
     val command: ArrayBuffer[String] = ArrayBuffer.empty
     if (useLocalCProgram) command += "samtools" else command += tool

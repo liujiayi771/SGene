@@ -9,7 +9,7 @@ import scala.collection.JavaConversions._
 /**
   * Created by joey on 2017/5/15.
   */
-object NGSSparkConf {
+object SGeneConf {
   /** ------------------------------------------------ Boolean param --------------------------------------------- **/
 
   val drop = "drop"
